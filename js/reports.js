@@ -2,20 +2,44 @@
 // REPORTS ENGINE: VIEW MODAL, DIRECT PRINT & AUTO PDF DOWNLOAD
 // ==========================================================
 
+function renderReportList() {
+  const list = $("reportList");
+  if (!list) return;
+
+  const adminReports = [
+    "Enrollment Report",
+    "Subject Status Report",
+    "Student Masterlist",
+    "Academic Performance Summary"
+  ];
+
+  list.innerHTML = adminReports.map(r => `
+    <div class="report">
+      <span>${esc(r)}</span>
+      <div class="report-actions">
+        <button class="secondary table-btn" onclick="viewReport('${r}')"><i class="fa-solid fa-eye fa-fw"></i> View</button>
+        <button class="secondary table-btn" onclick="printReport('${r}')"><i class="fa-solid fa-print fa-fw"></i> Print</button>
+        <button class="primary table-btn" onclick="downloadReportPDF('${r}')"><i class="fa-solid fa-file-pdf fa-fw"></i> Download (PDF)</button>
+      </div>
+    </div>
+  `).join("");
+}
+
 function generateReportHTML(name, isStudent = false) {
   const s = currentStudent;
   let html = `
-    <div class="report-paper" style="padding: 24px; background: #ffffff; color: #1f2937; font-family: 'Montserrat', Arial, sans-serif;">
+    <div class="report-paper" style="box-sizing: border-box; width: 100%; padding: 24px; background: #ffffff; color: #1f2937; font-family: 'Montserrat', Arial, sans-serif;">
       <div style="text-align:center;border-bottom:2px solid #7d090f;padding-bottom:12px;margin-bottom:16px;">
-        <h2 style="color:#7d090f;margin:0 0 4px 0;font-size:22px;font-family:'Montserrat', Arial, sans-serif;">Escuela de Nuestra Señora de la Salette</h2>
+        <h2 style="color:#7d090f;margin:0 0 4px 0;font-size:20px;font-family:'Montserrat', Arial, sans-serif;">Escuela de Nuestra Señora de la Salette</h2>
         <div style="font-size:12px;color:#555;font-family:'Montserrat', Arial, sans-serif;">Official Academic Document • School Year 2026-2027</div>
         <h3 style="margin:12px 0 0 0;text-transform:uppercase;color:#1f2937;letter-spacing:0.5px;font-family:'Montserrat', Arial, sans-serif;">${esc(name)}</h3>
       </div>
   `;
+  // ... rest of generateReportHTML stays the same
 
   if (isStudent && s) {
-    const grades = data.grades[s.id] || [];
-    const enr = data.enrollments.find(e => e.student === s.id) || {};
+    const grades = (data.grades && data.grades[s.id]) ? data.grades[s.id] : [];
+    const enr = (data.enrollments && data.enrollments.find(e => e.student === s.id)) || {};
     html += `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;font-size:13px;font-family:'Montserrat', Arial, sans-serif;">
         <div><b>Student:</b> ${esc(formatNameId(s))}</div>
@@ -23,148 +47,163 @@ function generateReportHTML(name, isStudent = false) {
         <div><b>Academic Status:</b> ${esc(s.status)}</div>
         <div><b>Enrollment Date:</b> ${esc(enr.date || "2026-06-15")}</div>
       </div>
-      <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:'Montserrat', Arial, sans-serif;">
-        <thead>
-          <tr style="background:#f8fafc;border-bottom:2px solid #ddd;">
-            <th style="padding:8px;text-align:left;color:#374151;">Subject</th>
-            <th style="padding:8px;text-align:center;color:#374151;">1st</th>
-            <th style="padding:8px;text-align:center;color:#374151;">2nd</th>
-            <th style="padding:8px;text-align:center;color:#374151;">3rd</th>
-            <th style="padding:8px;text-align:center;color:#374151;">4th</th>
-            <th style="padding:8px;text-align:center;color:#374151;">Final</th>
-            <th style="padding:8px;text-align:center;color:#374151;">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${grades.map(g => `
-            <tr style="border-bottom:1px solid #eee;">
-              <td style="padding:8px;">${esc(g[0])}</td>
-              <td style="padding:8px;text-align:center;">${g[1] ?? '—'}</td>
-              <td style="padding:8px;text-align:center;">${g[2] ?? '—'}</td>
-              <td style="padding:8px;text-align:center;">${g[3] ?? '—'}</td>
-              <td style="padding:8px;text-align:center;">${g[4] ?? '—'}</td>
-              <td style="padding:8px;text-align:center;font-weight:700;">${calc(g)}</td>
-              <td style="padding:8px;text-align:center;">${statusOf(calc(g))}</td>
+      <div class="report-scroll-hint" style="display:none;">Swipe horizontally to view full table &rarr;</div>
+      <div class="report-table-wrap">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:'Montserrat', Arial, sans-serif;">
+          <thead>
+            <tr style="background:#f8fafc;border-bottom:2px solid #ddd;">
+              <th style="padding:8px;text-align:left;color:#374151;">Subject</th>
+              <th style="padding:8px;text-align:center;color:#374151;">1st</th>
+              <th style="padding:8px;text-align:center;color:#374151;">2nd</th>
+              <th style="padding:8px;text-align:center;color:#374151;">3rd</th>
+              <th style="padding:8px;text-align:center;color:#374151;">4th</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Final</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Status</th>
             </tr>
-          `).join("")}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            ${grades.map(g => `
+              <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:8px;">${esc(g[0])}</td>
+                <td style="padding:8px;text-align:center;">${g[1] ?? '—'}</td>
+                <td style="padding:8px;text-align:center;">${g[2] ?? '—'}</td>
+                <td style="padding:8px;text-align:center;">${g[3] ?? '—'}</td>
+                <td style="padding:8px;text-align:center;">${g[4] ?? '—'}</td>
+                <td style="padding:8px;text-align:center;font-weight:700;">${calc(g)}</td>
+                <td style="padding:8px;text-align:center;">${statusOf(calc(g))}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
       <div style="margin-top:16px;text-align:right;font-size:14px;font-family:'Montserrat', Arial, sans-serif;">
         <b>General Average:</b> <span style="font-size:18px;color:#7d090f;font-weight:800;">${avgOf(grades)}</span>
       </div>
     `;
   } else if (name === "Enrollment Report") {
     html += `
-      <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:'Montserrat', Arial, sans-serif;">
-        <thead>
-          <tr style="background:#f8fafc;border-bottom:2px solid #ddd;">
-            <th style="padding:8px;text-align:left;color:#374151;">Student</th>
-            <th style="padding:8px;text-align:center;color:#374151;">SY</th>
-            <th style="padding:8px;text-align:center;color:#374151;">Grade</th>
-            <th style="padding:8px;text-align:center;color:#374151;">Strand</th>
-            <th style="padding:8px;text-align:center;color:#374151;">Section</th>
-            <th style="padding:8px;text-align:center;color:#374151;">Enrollment Date</th>
-            <th style="padding:8px;text-align:center;color:#374151;">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${data.enrollments.map(e => {
-            const st = data.students.find(x => x.id === e.student);
-            return `<tr style="border-bottom:1px solid #eee;">
-              <td style="padding:8px;"><b>${esc(st ? formatNameId(st) : e.student)}</b></td>
-              <td style="padding:8px;text-align:center;">${esc(e.schoolYear)}</td>
-              <td style="padding:8px;text-align:center;">${esc(e.grade)}</td>
-              <td style="padding:8px;text-align:center;">${esc(e.strand)}</td>
-              <td style="padding:8px;text-align:center;">${esc(e.section)}</td>
-              <td style="padding:8px;text-align:center;">${esc(e.date || "2026-06-15")}</td>
-              <td style="padding:8px;text-align:center;">${esc(e.enrollmentStatus)}</td>
-            </tr>`;
-          }).join("")}
-        </tbody>
-      </table>
+      <div class="report-scroll-hint" style="display:none;">Swipe horizontally to view full table &rarr;</div>
+      <div class="report-table-wrap">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:'Montserrat', Arial, sans-serif;">
+          <thead>
+            <tr style="background:#f8fafc;border-bottom:2px solid #ddd;">
+              <th style="padding:8px;text-align:left;color:#374151;">Student</th>
+              <th style="padding:8px;text-align:center;color:#374151;">SY</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Grade</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Strand</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Section</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Enrollment Date</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.enrollments.map(e => {
+              const st = data.students.find(x => x.id === e.student);
+              return `<tr style="border-bottom:1px solid #eee;">
+                <td style="padding:8px;"><b>${esc(st ? formatNameId(st) : e.student)}</b></td>
+                <td style="padding:8px;text-align:center;">${esc(e.schoolYear)}</td>
+                <td style="padding:8px;text-align:center;">${esc(e.grade)}</td>
+                <td style="padding:8px;text-align:center;">${esc(e.strand)}</td>
+                <td style="padding:8px;text-align:center;">${esc(e.section)}</td>
+                <td style="padding:8px;text-align:center;">${esc(e.date || "2026-06-15")}</td>
+                <td style="padding:8px;text-align:center;">${esc(e.enrollmentStatus)}</td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
     `;
   } else if (name === "Subject Status Report") {
     html += `
-      <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:'Montserrat', Arial, sans-serif;">
-        <thead>
-          <tr style="background:#f8fafc;border-bottom:2px solid #ddd;">
-            <th style="padding:8px;text-align:left;color:#374151;">Student</th>
-            <th style="padding:8px;text-align:left;color:#374151;">Subject</th>
-            <th style="padding:8px;text-align:center;color:#374151;">Final Grade</th>
-            <th style="padding:8px;text-align:center;color:#374151;">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${Object.entries(data.grades).flatMap(([id, subs]) => {
-            const st = data.students.find(x => x.id === id);
-            return subs.map(g => `
-              <tr style="border-bottom:1px solid #eee;">
-                <td style="padding:8px;"><b>${esc(st ? formatNameId(st) : id)}</b></td>
-                <td style="padding:8px;">${esc(g[0])}</td>
-                <td style="padding:8px;text-align:center;font-weight:700;">${calc(g)}</td>
-                <td style="padding:8px;text-align:center;">${statusOf(calc(g))}</td>
-              </tr>
-            `);
-          }).join("")}
-        </tbody>
-      </table>
+      <div class="report-scroll-hint" style="display:none;">Swipe horizontally to view full table &rarr;</div>
+      <div class="report-table-wrap">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:'Montserrat', Arial, sans-serif;">
+          <thead>
+            <tr style="background:#f8fafc;border-bottom:2px solid #ddd;">
+              <th style="padding:8px;text-align:left;color:#374151;">Student</th>
+              <th style="padding:8px;text-align:left;color:#374151;">Subject</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Final Grade</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${Object.entries(data.grades).flatMap(([id, subs]) => {
+              const st = data.students.find(x => x.id === id);
+              return subs.map(g => `
+                <tr style="border-bottom:1px solid #eee;">
+                  <td style="padding:8px;"><b>${esc(st ? formatNameId(st) : id)}</b></td>
+                  <td style="padding:8px;">${esc(g[0])}</td>
+                  <td style="padding:8px;text-align:center;font-weight:700;">${calc(g)}</td>
+                  <td style="padding:8px;text-align:center;">${statusOf(calc(g))}</td>
+                </tr>
+              `);
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
     `;
   } else if (name === "Student Masterlist") {
     html += `
-      <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:'Montserrat', Arial, sans-serif;">
-        <thead>
-          <tr style="background:#f8fafc;border-bottom:2px solid #ddd;">
-            <th style="padding:8px;text-align:left;color:#374151;">Student</th>
-            <th style="padding:8px;text-align:center;color:#374151;">Grade</th>
-            <th style="padding:8px;text-align:center;color:#374151;">Section</th>
-            <th style="padding:8px;text-align:center;color:#374151;">Contact Number</th>
-            <th style="padding:8px;text-align:center;color:#374151;">Academic Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${data.students.map(s => `
-            <tr style="border-bottom:1px solid #eee;">
-              <td style="padding:8px;"><b>${esc(formatNameId(s))}</b></td>
-              <td style="padding:8px;text-align:center;">${esc(s.grade)}</td>
-              <td style="padding:8px;text-align:center;">${esc(s.section)}</td>
-              <td style="padding:8px;text-align:center;">${esc(s.contact || "N/A")}</td>
-              <td style="padding:8px;text-align:center;">${esc(s.status)}</td>
+      <div class="report-scroll-hint" style="display:none;">Swipe horizontally to view full table &rarr;</div>
+      <div class="report-table-wrap">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:'Montserrat', Arial, sans-serif;">
+          <thead>
+            <tr style="background:#f8fafc;border-bottom:2px solid #ddd;">
+              <th style="padding:8px;text-align:left;color:#374151;">Student</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Grade</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Section</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Contact Number</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Academic Status</th>
             </tr>
-          `).join("")}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            ${data.students.map(s => `
+              <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:8px;"><b>${esc(formatNameId(s))}</b></td>
+                <td style="padding:8px;text-align:center;">${esc(s.grade)}</td>
+                <td style="padding:8px;text-align:center;">${esc(s.section)}</td>
+                <td style="padding:8px;text-align:center;">${esc(s.contact || "N/A")}</td>
+                <td style="padding:8px;text-align:center;">${esc(s.status)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
     `;
   } else {
     html += `
-      <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:'Montserrat', Arial, sans-serif;">
-        <thead>
-          <tr style="background:#f8fafc;border-bottom:2px solid #ddd;">
-            <th style="padding:8px;text-align:left;color:#374151;">Student</th>
-            <th style="padding:8px;text-align:center;color:#374151;">Grade</th>
-            <th style="padding:8px;text-align:center;color:#374151;">Section</th>
-            <th style="padding:8px;text-align:center;color:#374151;">General Average</th>
-            <th style="padding:8px;text-align:center;color:#374151;">Academic Standing</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${data.students.map(s => {
-            const gr = data.grades[s.id] || [];
-            const gpa = avgOf(gr);
-            return `<tr style="border-bottom:1px solid #eee;">
-              <td style="padding:8px;"><b>${esc(formatNameId(s))}</b></td>
-              <td style="padding:8px;text-align:center;">${esc(s.grade)}</td>
-              <td style="padding:8px;text-align:center;">${esc(s.section)}</td>
-              <td style="padding:8px;text-align:center;font-weight:700;">${gpa}</td>
-              <td style="padding:8px;text-align:center;">${Number(gpa) >= 75 ? "Passed" : "Conditional"}</td>
-            </tr>`;
-          }).join("")}
-        </tbody>
-      </table>
+      <div class="report-scroll-hint" style="display:none;">Swipe horizontally to view full table &rarr;</div>
+      <div class="report-table-wrap">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:'Montserrat', Arial, sans-serif;">
+          <thead>
+            <tr style="background:#f8fafc;border-bottom:2px solid #ddd;">
+              <th style="padding:8px;text-align:left;color:#374151;">Student</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Grade</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Section</th>
+              <th style="padding:8px;text-align:center;color:#374151;">General Average</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Academic Standing</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.students.map(s => {
+              const gr = data.grades[s.id] || [];
+              const gpa = avgOf(gr);
+              return `<tr style="border-bottom:1px solid #eee;">
+                <td style="padding:8px;"><b>${esc(formatNameId(s))}</b></td>
+                <td style="padding:8px;text-align:center;">${esc(s.grade)}</td>
+                <td style="padding:8px;text-align:center;">${esc(s.section)}</td>
+                <td style="padding:8px;text-align:center;font-weight:700;">${gpa}</td>
+                <td style="padding:8px;text-align:center;">${Number(gpa) >= 75 ? "Passed" : "Conditional"}</td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
     `;
   }
 
   html += `
-      <div style="margin-top:30px;display:flex;justify-content:space-between;font-size:12px;color:#555;font-family:'Montserrat', Arial, sans-serif;">
+      <div style="margin-top:24px;display:flex;justify-content:space-between;font-size:12px;color:#555;font-family:'Montserrat', Arial, sans-serif;">
         <div>Date Generated: ${new Date().toLocaleDateString()}</div>
         <div style="border-top:1px solid #333;width:180px;text-align:center;padding-top:4px;">Registrar / Dean</div>
       </div>
@@ -263,7 +302,6 @@ function downloadStudentReportPDF(name) {
 function executeAutomaticPDFDownload(filename, htmlContent) {
   toast("Generating PDF, please wait...");
 
-  // Build a visible overlay layer in normal flow so html2canvas computes full height and all contents
   const overlay = document.createElement("div");
   overlay.style.position = "fixed";
   overlay.style.inset = "0";
@@ -286,10 +324,14 @@ function executeAutomaticPDFDownload(filename, htmlContent) {
   statusLabel.textContent = "Rendering official PDF document...";
   overlay.appendChild(statusLabel);
 
-  // Normal flow container (no fixed/absolute child)
+// Allow the overlay to scroll horizontally if needed so the fixed 750px paper fits
+  overlay.style.overflowX = "auto";
+  overlay.style.overflowY = "auto";
+
+  // Lock width to 750px so mobile screens don't crush the document layout
   const reportElement = document.createElement("div");
   reportElement.style.width = "750px";
-  reportElement.style.maxWidth = "100%";
+  reportElement.style.minWidth = "750px"; // Prevents phone viewport from shrinking it
   reportElement.style.background = "#ffffff";
   reportElement.style.boxShadow = "0 4px 20px rgba(0, 0, 0, 0.12)";
   reportElement.style.borderRadius = "8px";
@@ -335,3 +377,7 @@ function executeAutomaticPDFDownload(filename, htmlContent) {
     }
   }, 350);
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  renderReportList();
+});

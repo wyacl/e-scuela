@@ -9,6 +9,11 @@ function syncEnrollmentStudentData() {
   const existing = data.enrollments.find(e => e.student === sId);
   if ($("eEnrollmentStatus")) $("eEnrollmentStatus").value = existing?.enrollmentStatus || "Enrolled";
 
+  // Sync strand FIRST so updateEnrollmentFields builds the correct section choices
+  if ($("eStrand") && existing?.strand && existing.strand !== "N/A") {
+    $("eStrand").value = existing.strand;
+  }
+
   updateEnrollmentFields();
   if (existing?.section && $("eSection")) $("eSection").value = existing.section;
 
@@ -36,7 +41,6 @@ function updateEnrollmentFields() {
   }
 }
 
-// Compact chips with checkbox immediately followed by subject text
 function renderEnrollmentSubjects(studentId) {
   const container = $("enrollmentSubjects");
   if (!container) return;
@@ -74,7 +78,7 @@ function saveEnrollment() {
     student: id,
     schoolYear: val("eSY") || "2026-2027",
     grade: s.grade,
-    strand: (s.grade === "Grade 11" || s.grade === "Grade 12") ? val("eStrand") : "N/A",
+    strand: (s.grade === "Grade 11" || s.grade === "Grade 12") ? (val("eStrand") || "STEM") : "N/A",
     section,
     date,
     status: s.status,

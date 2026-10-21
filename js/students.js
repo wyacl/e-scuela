@@ -35,7 +35,7 @@ function saveStudent() {
     contact: val("fContact") || "N/A",
     guardian: val("fGuardian") || "N/A",
     username: id,
-    password: "student123"
+    password: id // Standardized: Password is ID Number
   };
 
   data.students.push(s);

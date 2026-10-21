@@ -24,6 +24,8 @@ function filterGradeStudents() {
   const el = $("gradeStudent");
   if (!el) return;
 
+  const currentSelected = el.value;
+
   const filtered = data.students.filter(s => {
     if (y && s.grade !== y) return false;
     if (sec && s.section !== sec) return false;
@@ -37,7 +39,12 @@ function filterGradeStudents() {
   if (filtered.length) {
     el.disabled = false;
     el.innerHTML = filtered.map(s => `<option value="${esc(s.id)}">${esc(formatNameId(s))}</option>`).join("");
-    el.value = filtered[0].id;
+    // Preserves the currently edited student instead of snapping back to index 0
+    if (currentSelected && filtered.some(s => s.id === currentSelected)) {
+      el.value = currentSelected;
+    } else {
+      el.value = filtered[0].id;
+    }
     renderGrades();
   } else {
     el.disabled = true;
