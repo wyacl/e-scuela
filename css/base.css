@@ -1,0 +1,290 @@
+:root {
+  --sidebar-width: 240px;
+
+  /* Theme color palette */
+  --primary: #7d090f;
+  --primary-dark: #590407;
+  --primary-deep: #3b0204;
+  --primary-light: #fbebee;
+  --accent-green: #2e7d32;
+  --accent-green-bg: #e8f5e9;
+  --accent-amber: #b26a00;
+  --accent-amber-bg: #fff8e1;
+
+  --bg-main: #f8fafc;
+  --surface: #ffffff;
+  --text-main: #1f2937;
+  --text-muted: #6b7280;
+  --border: #e5e7eb;
+  --border-focus: rgba(125, 9, 15, 0.28);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 6px 18px -4px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 16px 36px -8px rgba(0, 0, 0, 0.14);
+  --shadow-hover: 0 12px 28px -6px rgba(89, 4, 7, 0.28);
+
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --trans-fast: 0.18s var(--ease-smooth);
+  --trans-normal: 0.28s var(--ease-spring);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  max-width: 100%;
+  overflow-x: clip;
+  font-family: 'Montserrat', sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+body.drawer-locked {
+  overflow: hidden;
+}
+
+button, input, select {
+  font: inherit;
+  outline: none;
+}
+
+input, select {
+  font-size: 15px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ==========================================================
+   ORIGINAL KEYFRAMES & FADE IN ANIMATIONS
+   ========================================================== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.96) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes slideDownFade {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cardEntrance {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes barGrow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes toastSlide {
+  0% { opacity: 0; transform: translateY(20px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Page fade transition when active */
+.page:not(.hidden) {
+  animation: fadeIn 0.35s var(--ease-spring) both;
+}
+
+/* ==========================================================
+   ORIGINAL BUTTONS & SIGNATURE HOVER EFFECT
+   ========================================================== */
+.primary {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #7d090f;
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-top: 1.5px solid #ffffff;
+  border-radius: 10px;
+  padding: 11px 20px;
+  cursor: pointer;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 1), 0 4px 8px -1px rgba(0, 0, 0, 0.08);
+  transition: transform var(--trans-fast), box-shadow var(--trans-fast), background var(--trans-fast), color var(--trans-fast);
+}
+
+.primary:hover {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(89, 4, 7, 0.3);
+}
+
+.primary:active {
+  background: var(--primary-dark);
+  color: #ffffff;
+  transform: translateY(1px);
+}
+
+.secondary {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--primary-dark);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 10px;
+  padding: 9px 15px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.9), 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all var(--trans-fast);
+}
+
+.secondary:hover {
+  background: rgba(251, 235, 238, 0.8);
+  border-color: rgba(158, 14, 23, 0.3);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.table-btn {
+  padding: 6px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Fields & General Form styling */
+.field {
+  text-align: left;
+  margin: 14px 0;
+}
+
+.field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text-main);
+  transition: border-color var(--trans-fast), box-shadow var(--trans-fast);
+}
+
+.field input:focus,
+.field select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--border-focus);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.span-2 {
+  grid-column: span 2;
+}
+
+/* Tables */
+.table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 10px;
+  margin-bottom: 18px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th, td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  font-size: 13px;
+}
+
+th {
+  background: #fafafa;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+tbody tr:hover {
+  background-color: #fdf2f3;
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.badge.regular, .passed { background: var(--accent-green-bg); color: var(--accent-green); }
+.badge.failed, .failed { background: #fde8ea; color: var(--primary); }
+.badge.irregular, .pending { background: var(--accent-amber-bg); color: var(--accent-amber); }
+.badge.enrolled { background: #e0f2fe; color: #0369a1; }
+.badge.dropped { background: #fee2e2; color: #b91c1c; }
+.badge.gold { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+.badge.silver { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+.badge.bronze { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+
+.toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  background: var(--primary-dark);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(20px);
+  transition: all 0.3s var(--ease-spring);
+  z-index: 3000;
+  font-size: 13px;
+}
+
+.toast.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}

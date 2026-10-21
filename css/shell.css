@@ -1,0 +1,533 @@
+.app {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: clip;
+  position: relative;
+}
+
+.drawer-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  z-index: 998;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+}
+
+.drawer-overlay.active {
+  display: block;
+  opacity: 1;
+}
+
+.sidebar {
+  width: var(--sidebar-width);
+  background: linear-gradient(180deg, #590407 0%, #7d090f 100%);
+  color: #fff;
+  padding: 20px 14px;
+  position: fixed;
+  inset: 0 auto 0 0;
+  overflow-y: auto;
+  z-index: 999;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.16);
+  transition: transform var(--trans-normal);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 4px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  margin-bottom: 14px;
+}
+
+.brand-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.brand .logo {
+  margin: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #ffffff;
+  padding: 2px;
+}
+
+.brand strong { font-size: 17px; display: block; }
+.brand small { display: block; opacity: 0.82; font-size: 11px; }
+
+.drawer-close {
+  display: none;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.nav button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.88);
+  padding: 11px 14px;
+  border-radius: 10px;
+  margin: 5px 0;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: all var(--trans-fast);
+}
+
+.nav button:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  transform: translateX(3px);
+}
+
+.nav button.active {
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--primary-dark);
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+}
+
+.nav button.active i {
+  color: var(--primary);
+}
+
+.nav .logout {
+  margin-top: 22px;
+  color: #fca5a5;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.main {
+  margin-left: var(--sidebar-width);
+  width: calc(100% - var(--sidebar-width));
+  max-width: calc(100% - var(--sidebar-width));
+  padding: 16px 32px 32px;
+  min-height: 100vh;
+  overflow-x: clip;
+  animation: fadeIn 0.35s var(--ease-spring) both;
+}
+
+.top {
+  position: sticky;
+  top: 12px;
+  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 12px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  padding: 12px 18px;
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(89, 4, 7, 0.28);
+}
+
+.top-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.menu-toggle {
+  display: none;
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 9px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+.top h2 {
+  margin: 0;
+  color: #ffffff !important;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.user {
+  display: none !important;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.card, .portal-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: var(--shadow-sm);
+  border-top: 3px solid var(--primary);
+  transition: transform var(--trans-normal), box-shadow var(--trans-normal);
+  animation: cardEntrance 0.4s var(--ease-spring) both;
+}
+
+.card:hover, .portal-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-hover);
+}
+
+.card .label, .portal-card small {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.card .value {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--primary-dark);
+  margin-top: 4px;
+}
+
+.portal-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.portal-card strong {
+  display: block;
+  color: var(--primary-dark);
+  font-size: 16px;
+  margin-top: 5px;
+  word-break: break-word;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px 24px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 20px;
+  border-top: 4px solid var(--primary-dark);
+}
+
+.panel h3 {
+  margin-top: 0;
+  color: var(--primary-dark);
+  font-size: 19px;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0 14px;
+}
+
+.filters input, .filters select {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+/* ==========================================================
+   DROPDOWNS (ENROLLMENT & GRADES STUDENT SELECT)
+   ========================================================== */
+#eStudent,
+#gradeStudent {
+  width: 100%;
+  max-width: 100%;
+  height: 42px;
+  padding: 8px 38px 8px 12px; /* 38px right padding prevents text colliding with arrow */
+  border-radius: 9px;
+  border: 1.5px solid var(--border);
+  background-color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* Cleanly cuts off long names with ... */
+  box-sizing: border-box;
+}
+
+#eStudent:focus,
+#gradeStudent:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(125, 9, 15, 0.12);
+}
+
+/* Grade Filter Bar */
+.grades-filter-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  margin: 4px 0 8px 0;
+}
+
+.grades-filter-bar select {
+  flex: 1 1 130px;
+  min-width: 100px;
+  height: 38px;
+  padding: 6px 28px 6px 10px;
+  font-size: 12.5px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* ==========================================================
+   SUBJECTS TO TAKE (COMPACT CHIP / PILL HORIZONTAL ROW)
+   ========================================================== */
+.subject-checkbox-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 12px;
+  background: #fffafa;
+  border: 1px solid rgba(125, 9, 15, 0.15);
+  border-radius: 12px;
+}
+
+.subject-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: border-color var(--trans-fast), transform var(--trans-fast);
+}
+
+.subject-checkbox-label:hover {
+  border-color: rgba(125, 9, 15, 0.4);
+  transform: translateY(-1px);
+}
+
+.subject-checkbox-label input[type="checkbox"] {
+  accent-color: var(--primary);
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.subject-checkbox-label span {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-main);
+  text-align: left;
+}
+
+.grade-input {
+  width: 58px;
+  padding: 7px 4px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  text-align: center;
+  font-size: 13px;
+  background: #ffffff;
+}
+
+.student-welcome {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+  color: #fff;
+  border-radius: 16px;
+  padding: 22px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 24px -6px rgba(110, 5, 9, 0.32);
+}
+
+.student-welcome h2 { margin: 0 0 6px; font-size: 22px; }
+.student-welcome p { margin: 0; opacity: 0.9; font-size: 14px; }
+
+.profile-box {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.profile-item {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.profile-item small {
+  color: var(--text-muted);
+  display: block;
+  font-size: 11px;
+}
+
+.profile-item strong {
+  color: var(--primary-dark);
+  font-size: 13.5px;
+  word-break: break-word;
+}
+
+/* ==========================================================
+   MOBILE RESPONSIVENESS & OVERLAP PREVENTION (≤ 768px)
+   ========================================================== */
+@media (max-width: 768px) {
+  .app, .main {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding: 10px 10px 24px;
+  }
+
+  .menu-toggle, .drawer-close {
+    display: inline-flex !important;
+  }
+
+  .sidebar {
+    width: 275px;
+    max-width: 82vw;
+    left: 0;
+    transform: translateX(-100%);
+  }
+
+  .sidebar.drawer-open {
+    transform: translateX(0);
+    box-shadow: 6px 0 28px rgba(0, 0, 0, 0.35);
+  }
+
+  .top {
+    position: sticky !important;
+    top: 10px !important;
+    padding: 10px 14px !important;
+  }
+
+  .section-head {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  /* Specific Dropdown Protections on Mobile */
+  #eStudent,
+  #gradeStudent {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 42px !important;
+    padding-right: 38px !important;
+    margin: 4px 0 10px 0 !important;
+  }
+
+  .grades-filter-bar {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .grades-filter-bar select:last-child {
+    grid-column: span 2 !important;
+  }
+
+  .date-field-container input[type="date"] {
+    width: 100% !important;
+    display: block !important;
+    box-sizing: border-box !important;
+  }
+
+  .table-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  #enrollment table,
+  #grades table {
+    min-width: 620px;
+  }
+
+  .portal-cards {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .portal-card {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 12px 14px !important;
+  }
+
+  .portal-card strong {
+    text-align: right;
+    max-width: 60%;
+  }
+
+  .form-grid, .grid2, .profile-box {
+    grid-template-columns: 1fr !important;
+  }
+
+  .span-2 {
+    grid-column: span 1 !important;
+  }
+}
