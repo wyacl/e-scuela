@@ -360,6 +360,13 @@ input[type="date"]:focus {
   box-shadow: 0 0 0 3px rgba(125, 9, 15, 0.12);
 }
 
+#eDate[readonly] {
+  background-color: #f8fafc !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
 .grades-filter-bar {
   display: flex;
   align-items: center;

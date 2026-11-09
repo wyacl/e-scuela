@@ -22,7 +22,7 @@ CREATE TABLE students (
     academic_status ENUM('Regular', 'Irregular', 'Transferee') DEFAULT 'Regular',
     contact_number VARCHAR(20) DEFAULT 'N/A',
     guardian_name VARCHAR(100) DEFAULT 'N/A',
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- 3. Enrollments Table (Academic Records)
@@ -35,7 +35,7 @@ CREATE TABLE enrollments (
     section VARCHAR(50) NOT NULL,
     enrollment_date DATE NOT NULL,
     enrollment_status ENUM('Enrolled', 'Dropped') DEFAULT 'Enrolled',
-    FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE
+    FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- 4. Subjects Table (Curriculum)
@@ -53,7 +53,7 @@ CREATE TABLE grades (
     q2 DECIMAL(5,2) DEFAULT NULL,
     q3 DECIMAL(5,2) DEFAULT NULL,
     q4 DECIMAL(5,2) DEFAULT NULL,
-    FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
-    FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE KEY unique_student_subject (student_id, subject_id)
 );

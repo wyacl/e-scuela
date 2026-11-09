@@ -7,17 +7,29 @@ INSERT INTO users (username, password_hash, role) VALUES
 ('admin', 'admin123', 'admin'),
 ('faculty', 'faculty123', 'faculty'),
 ('catherine', 'cath123', 'student'),
-('achilles', 'ach123', 'student');
+('achilles', 'ach123', 'student'),
+('2026-003', '2026-003', 'student'),
+('2026-004', '2026-004', 'student'),
+('2026-005', '2026-005', 'student'),
+('2026-006', '2026-006', 'student');
 
--- 2. Insert Student Profiles (Linked to User IDs 3 and 4)
+-- 2. Insert Student Profiles
 INSERT INTO students (student_id, user_id, full_name, grade_level, section, academic_status) VALUES 
 ('2026-001', 3, 'CATHERINE A. ROSARIO', 'Grade 12', 'STEM-A', 'Regular'),
-('2026-002', 4, 'ACHILLES NERO C. AGUILA', 'Grade 11', 'STEM-A', 'Regular');
+('2026-002', 4, 'ACHILLES NERO C. AGUILA', 'Grade 11', 'STEM-A', 'Regular'),
+('2026-003', 5, 'PRINCE CARL B. BARTOLOME', 'Grade 12', 'STEM-A', 'Regular'),
+('2026-004', 6, 'BLUE BARRON B. BAMBILLA', 'Grade 11', 'HUMSS-A', 'Regular'),
+('2026-005', 7, 'JAYSON J. ESQUEJO', 'Grade 12', 'STEM-A', 'Regular'),
+('2026-006', 8, 'CARL ANTHONY V. DE VERA', 'Grade 12', 'STEM-A', 'Regular');
 
 -- 3. Insert Enrollment Records
 INSERT INTO enrollments (student_id, school_year, grade_level, strand, section, enrollment_date, enrollment_status) VALUES 
 ('2026-001', '2026-2027', 'Grade 12', 'STEM', 'STEM-A', '2026-06-15', 'Enrolled'),
-('2026-002', '2026-2027', 'Grade 11', 'STEM', 'STEM-A', '2026-06-15', 'Enrolled');
+('2026-002', '2026-2027', 'Grade 11', 'STEM', 'STEM-A', '2026-06-15', 'Enrolled'),
+('2026-003', '2026-2027', 'Grade 12', 'STEM', 'STEM-A', '2026-06-15', 'Enrolled'),
+('2026-004', '2026-2027', 'Grade 11', 'HUMSS', 'HUMSS-A', '2026-06-15', 'Enrolled'),
+('2026-005', '2026-2027', 'Grade 12', 'STEM', 'STEM-A', '2026-06-15', 'Enrolled'),
+('2026-006', '2026-2027', 'Grade 12', 'STEM', 'STEM-A', '2026-06-15', 'Enrolled');
 
 -- 4. Insert Master Curriculum Subjects
 INSERT INTO subjects (subject_name) VALUES 

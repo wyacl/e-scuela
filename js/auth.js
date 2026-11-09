@@ -15,7 +15,7 @@ function selectLoginType(type) {
   if (usernameInput && usernameLabel && passwordInput) {
     if (type === "student") {
       usernameLabel.textContent = "Student ID Number";
-      usernameInput.placeholder = "Enter ID Number (e.g. 2026-001)";
+      usernameInput.placeholder = "Enter ID Number (e.g. 2026-000)";
       passwordInput.placeholder = "Enter password";
     } else {
       usernameLabel.textContent = "Username";
@@ -38,13 +38,19 @@ function login() {
   }
 
   if (loginType === "faculty") {
+    // 1. Administrator Account (Unchanged)
     if (u === "admin" && p === "admin123") {
       currentUser = { name: "Administrator", role: "Administrator" };
       return openFaculty();
     }
-    if (u === "faculty" && p === "faculty123") {
-      currentUser = { name: "Faculty", role: "Faculty" };
-      return openFaculty();
+
+    // 2. Faculty Account
+    if (u === "salette.maria" && p === "maria123") {
+      currentUser = { 
+        name: data.faculty?.name || "Prof. Maria Santos", 
+        role: "Faculty" 
+      };
+      return openFacultyPortal();
     }
   } else {
     // Student logs in using their ID Number as both Username and Password
@@ -57,7 +63,8 @@ function login() {
       return openStudent();
     }
   }
-  $("loginError").textContent = "Invalid credentials. Student username and password are their ID Number.";
+
+  $("loginError").textContent = "Invalid credentials. Check your username and password.";
 }
 
 function logout() {

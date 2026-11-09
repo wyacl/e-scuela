@@ -1,6 +1,32 @@
+function renderAdminDashboardAnnouncements() {
+  const listEl = $("adminAnnouncementsList");
+  const countEl = $("adminNoticeCount");
+  const notices = data.announcements || [];
+
+  if (countEl) countEl.textContent = `${notices.length} Active`;
+  if (!listEl) return;
+
+  listEl.innerHTML = notices.map(a => `
+    <div class="fac-notice-item">
+      <div class="fac-notice-header">
+        <div>
+          <h4 style="margin: 0; font-size: 15px; color: var(--primary-dark);">${esc(a.title)}</h4>
+          <small style="color:var(--text-muted);"><i class="fa-solid fa-bullhorn"></i> Posted by ${esc(a.author)} &bull; ${esc(a.date)}</small>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="badge enrolled">${esc(a.target)}</span>
+          <button class="secondary table-btn" style="color:var(--primary);" onclick="deleteAnnouncement('${a.id}')"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>
+      <p style="margin: 10px 0 0 0; font-size: 13px; line-height: 1.5; color: var(--text-main);">${esc(a.content)}</p>
+    </div>
+  `).join("") || `<p style="color:var(--text-muted);margin:0;">No active notices posted.</p>`;
+}
+
 function renderDashboard() {
   const droppedIds = new Set(data.enrollments.filter(e => e.enrollmentStatus === "Dropped").map(e => e.student));
-  const enrolledCount = data.students.filter(s => !droppedIds.has(s.id) && s.section !== "Dropped" && s.section !== "Pending Enrollment").length;
+  const enrolledIds = new Set(data.enrollments.filter(e => e.enrollmentStatus === "Enrolled").map(e => e.student));
+  const enrolledCount = data.students.filter(s => enrolledIds.has(s.id) && !droppedIds.has(s.id)).length;
 
   $("totalStudents").textContent = data.students.length;
   $("enrolledStudents").textContent = enrolledCount;
@@ -11,6 +37,8 @@ function renderDashboard() {
   $("recentStudents").innerHTML = data.students.slice(0, 6).map(s =>
     `<p><b>${esc(formatNameId(s))}</b><br><small>${esc(s.grade)} • ${esc(s.section)}</small></p>`
   ).join("");
+
+  renderAdminDashboardAnnouncements();
 }
 
 function populateSelects() {
@@ -20,17 +48,26 @@ function populateSelects() {
     el.innerHTML = data.students.map(s => `<option value="${esc(s.id)}">${esc(formatNameId(s))}</option>`).join("");
     if (old && data.students.some(s => s.id === old)) el.value = old;
   }
-  if ($("eDate") && !$("eDate").value) {
-    $("eDate").value = new Date().toISOString().slice(0, 10);
+
+  const eDateInput = $("eDate");
+  if (eDateInput) {
+    const today = new Date().toISOString().slice(0, 10);
+    eDateInput.value = today;
+    eDateInput.min = today;
+    eDateInput.max = today;
   }
+
   syncEnrollmentStudentData();
 
   const filterGrade = $("studentGrade");
   if (filterGrade) {
     filterGrade.innerHTML = `<option value="">All Grade Levels</option>` + gradeLevels.map(g => `<option value="${g}">${g}</option>`).join("");
   }
+
   const fGrade = $("fGrade");
-  if (fGrade) fGrade.innerHTML = gradeLevels.map(g => `<option value="${g}">${g}</option>`).join("");
+  if (fGrade) {
+    fGrade.innerHTML = gradeLevels.map(g => `<option value="${g}">${g}</option>`).join("");
+  }
 }
 
 function renderAll() {
@@ -65,6 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
       closeDrawer();
       closeStudentModal();
       closeReportModal();
+      closeDeleteModal();
     }
   });
 
@@ -77,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-if ($("reportList")) {
+  if ($("reportList")) {
     $("reportList").innerHTML = [
       "Student Academic Report", "Enrollment Report", "Grade Report",
       "Subject Status Report", "Student Masterlist"

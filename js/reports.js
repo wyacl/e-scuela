@@ -35,16 +35,17 @@ function generateReportHTML(name, isStudent = false) {
         <h3 style="margin:12px 0 0 0;text-transform:uppercase;color:#1f2937;letter-spacing:0.5px;font-family:'Montserrat', Arial, sans-serif;">${esc(name)}</h3>
       </div>
   `;
-  // ... rest of generateReportHTML stays the same
 
   if (isStudent && s) {
     const grades = (data.grades && data.grades[s.id]) ? data.grades[s.id] : [];
     const enr = (data.enrollments && data.enrollments.find(e => e.student === s.id)) || {};
+    const studentStatus = s.status === "Regular" ? "Enrolled" : (s.status || "Enrolled");
+
     html += `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;font-size:13px;font-family:'Montserrat', Arial, sans-serif;">
         <div><b>Student:</b> ${esc(formatNameId(s))}</div>
         <div><b>Grade &amp; Section:</b> ${esc(s.grade)} - ${esc(s.section)}</div>
-        <div><b>Academic Status:</b> ${esc(s.status)}</div>
+        <div><b>Status:</b> ${esc(studentStatus)}</div>
         <div><b>Enrollment Date:</b> ${esc(enr.date || "2026-06-15")}</div>
       </div>
       <div class="report-scroll-hint" style="display:none;">Swipe horizontally to view full table &rarr;</div>
@@ -99,6 +100,7 @@ function generateReportHTML(name, isStudent = false) {
           <tbody>
             ${data.enrollments.map(e => {
               const st = data.students.find(x => x.id === e.student);
+              const enrollStatus = e.enrollmentStatus === "Regular" ? "Enrolled" : (e.enrollmentStatus || "Enrolled");
               return `<tr style="border-bottom:1px solid #eee;">
                 <td style="padding:8px;"><b>${esc(st ? formatNameId(st) : e.student)}</b></td>
                 <td style="padding:8px;text-align:center;">${esc(e.schoolYear)}</td>
@@ -106,7 +108,7 @@ function generateReportHTML(name, isStudent = false) {
                 <td style="padding:8px;text-align:center;">${esc(e.strand)}</td>
                 <td style="padding:8px;text-align:center;">${esc(e.section)}</td>
                 <td style="padding:8px;text-align:center;">${esc(e.date || "2026-06-15")}</td>
-                <td style="padding:8px;text-align:center;">${esc(e.enrollmentStatus)}</td>
+                <td style="padding:8px;text-align:center;">${esc(enrollStatus)}</td>
               </tr>`;
             }).join("")}
           </tbody>
@@ -153,19 +155,22 @@ function generateReportHTML(name, isStudent = false) {
               <th style="padding:8px;text-align:center;color:#374151;">Grade</th>
               <th style="padding:8px;text-align:center;color:#374151;">Section</th>
               <th style="padding:8px;text-align:center;color:#374151;">Contact Number</th>
-              <th style="padding:8px;text-align:center;color:#374151;">Academic Status</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Status</th>
             </tr>
           </thead>
           <tbody>
-            ${data.students.map(s => `
-              <tr style="border-bottom:1px solid #eee;">
-                <td style="padding:8px;"><b>${esc(formatNameId(s))}</b></td>
-                <td style="padding:8px;text-align:center;">${esc(s.grade)}</td>
-                <td style="padding:8px;text-align:center;">${esc(s.section)}</td>
-                <td style="padding:8px;text-align:center;">${esc(s.contact || "N/A")}</td>
-                <td style="padding:8px;text-align:center;">${esc(s.status)}</td>
-              </tr>
-            `).join("")}
+            ${data.students.map(st => {
+              const studentStatus = st.status === "Regular" ? "Enrolled" : (st.status || "Enrolled");
+              return `
+                <tr style="border-bottom:1px solid #eee;">
+                  <td style="padding:8px;"><b>${esc(formatNameId(st))}</b></td>
+                  <td style="padding:8px;text-align:center;">${esc(st.grade)}</td>
+                  <td style="padding:8px;text-align:center;">${esc(st.section)}</td>
+                  <td style="padding:8px;text-align:center;">${esc(st.contact || "N/A")}</td>
+                  <td style="padding:8px;text-align:center;">${esc(studentStatus)}</td>
+                </tr>
+              `;
+            }).join("")}
           </tbody>
         </table>
       </div>
@@ -185,13 +190,13 @@ function generateReportHTML(name, isStudent = false) {
             </tr>
           </thead>
           <tbody>
-            ${data.students.map(s => {
-              const gr = data.grades[s.id] || [];
+            ${data.students.map(st => {
+              const gr = data.grades[st.id] || [];
               const gpa = avgOf(gr);
               return `<tr style="border-bottom:1px solid #eee;">
-                <td style="padding:8px;"><b>${esc(formatNameId(s))}</b></td>
-                <td style="padding:8px;text-align:center;">${esc(s.grade)}</td>
-                <td style="padding:8px;text-align:center;">${esc(s.section)}</td>
+                <td style="padding:8px;"><b>${esc(formatNameId(st))}</b></td>
+                <td style="padding:8px;text-align:center;">${esc(st.grade)}</td>
+                <td style="padding:8px;text-align:center;">${esc(st.section)}</td>
                 <td style="padding:8px;text-align:center;font-weight:700;">${gpa}</td>
                 <td style="padding:8px;text-align:center;">${Number(gpa) >= 75 ? "Passed" : "Conditional"}</td>
               </tr>`;
@@ -311,6 +316,7 @@ function executeAutomaticPDFDownload(filename, htmlContent) {
   overlay.style.flexDirection = "column";
   overlay.style.alignItems = "center";
   overlay.style.justifyContent = "flex-start";
+  overlay.style.overflowX = "auto";
   overlay.style.overflowY = "auto";
   overlay.style.padding = "24px 10px";
   overlay.style.boxSizing = "border-box";
@@ -324,14 +330,9 @@ function executeAutomaticPDFDownload(filename, htmlContent) {
   statusLabel.textContent = "Rendering official PDF document...";
   overlay.appendChild(statusLabel);
 
-// Allow the overlay to scroll horizontally if needed so the fixed 750px paper fits
-  overlay.style.overflowX = "auto";
-  overlay.style.overflowY = "auto";
-
-  // Lock width to 750px so mobile screens don't crush the document layout
   const reportElement = document.createElement("div");
   reportElement.style.width = "750px";
-  reportElement.style.minWidth = "750px"; // Prevents phone viewport from shrinking it
+  reportElement.style.minWidth = "750px";
   reportElement.style.background = "#ffffff";
   reportElement.style.boxShadow = "0 4px 20px rgba(0, 0, 0, 0.12)";
   reportElement.style.borderRadius = "8px";

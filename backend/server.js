@@ -2,9 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-
-// Import Database and Routes
-const pool = require('./config/db'); 
+const enrollmentRoutes = require('./routes/enrollmentRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 
 const app = express();
@@ -15,7 +13,7 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json()); // Parses incoming JSON payloads
 
-// Mount API Routes
+app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/students', studentRoutes);
 
 // Root test route

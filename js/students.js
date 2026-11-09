@@ -1,41 +1,68 @@
+// Helper: Dynamically verify enrollment status
+function getStudentStatus(studentId) {
+  const enr = data.enrollments.find(e => e.student === studentId);
+  return (enr && enr.enrollmentStatus === "Enrolled") ? "Enrolled" : "Pending";
+}
+
 function renderStudents() {
   const q = ($("studentSearch")?.value || "").toLowerCase();
   const gr = $("studentGrade")?.value || "";
   $("studentTable").innerHTML = data.students
     .filter(s => (!q || s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q)) && (!gr || s.grade === gr))
-    .map(s => `<tr>
-        <td><b>${esc(formatNameId(s))}</b></td>
+    .map(s => {
+      const status = getStudentStatus(s.id);
+      const badgeClass = status.toLowerCase() === "enrolled" ? "enrolled" : "pending";
+
+      return `<tr>
+        <td><b>${esc(s.name)}</b></td>
+        <td>${esc(s.id)}</td>
         <td>${esc(s.grade)}</td>
-        <td>${esc(s.section)}</td>
-        <td><span class="badge ${esc(s.status.toLowerCase())}">${esc(s.status)}</span></td>
+        <td><span class="badge ${badgeClass}">${esc(status)}</span></td>
         <td style="white-space:nowrap;">
           <button class="secondary table-btn" onclick="viewStudentModal('${esc(s.id)}')"><i class="fa-solid fa-eye fa-fw"></i> View</button>
-          <button class="secondary table-btn" style="color:var(--primary);margin-left:4px;" onclick="deleteStudent('${esc(s.id)}')"><i class="fa-solid fa-trash fa-fw"></i> Remove</button>
+          <button class="secondary table-btn" style="color:var(--primary);margin-left:4px;" onclick="promptDeleteStudent('${esc(s.id)}')"><i class="fa-solid fa-trash fa-fw"></i> Remove</button>
         </td>
-      </tr>`).join("") || `<tr><td colspan="5">No students found.</td></tr>`;
+      </tr>`;
+    }).join("") || `<tr><td colspan="5">No students found.</td></tr>`;
 }
 
 function openStudentForm() { $("studentForm")?.classList.remove("hidden"); }
-function closeStudentForm() { $("studentForm")?.classList.add("hidden"); }
+
+function closeStudentForm() {
+  $("studentForm")?.classList.add("hidden");
+  ["fId", "fLastName", "fFirstName", "fMiddleName", "fSuffix", "fContact", "fGuardian"].forEach(id => {
+    if ($(id)) $(id).value = "";
+  });
+}
 
 function saveStudent() {
   const id = val("fId");
-  const name = val("fName");
-  if (!id || !name) return toast("Student ID and Name are required.");
+  const lastName = val("fLastName");
+  const firstName = val("fFirstName");
+  const middleName = val("fMiddleName");
+  const suffix = val("fSuffix");
+
+  if (!id || !lastName || !firstName) return toast("Student ID, Last Name, and First Name are required.");
 
   if (!/^\d{4}-\d{3}$/.test(id)) return toast("Student ID must follow 0000-000 format.");
   if (data.students.some(x => x.id === id)) return toast("Student ID already exists.");
 
+  const fullName = [firstName, middleName, lastName, suffix].filter(Boolean).join(" ").toUpperCase();
+
   const s = {
     id,
-    name,
+    name: fullName,
+    lastName,
+    firstName,
+    middleName: middleName || "",
+    suffix: suffix || "",
     grade: val("fGrade") || "Grade 1",
     section: "Pending Enrollment",
-    status: val("fStatus") || "Regular",
+    status: "Pending",
     contact: val("fContact") || "N/A",
     guardian: val("fGuardian") || "N/A",
     username: id,
-    password: id // Standardized: Password is ID Number
+    password: id
   };
 
   data.students.push(s);
@@ -46,26 +73,49 @@ function saveStudent() {
   toast(`Registered: ${formatNameId(s)}`);
 }
 
-function deleteStudent(id) {
+// ==================== REMOVE CONFIRMATION MODAL ====================
+let studentToDeleteId = null;
+
+function promptDeleteStudent(id) {
   const s = data.students.find(x => x.id === id);
-  if (!s || !confirm(`Remove ${formatNameId(s)}?`)) return;
+  if (!s) return;
+  studentToDeleteId = id;
+  $("deleteStudentName").textContent = formatNameId(s);
+  $("deleteStudentID").textContent = `ID: ${s.id}`;
+  $("studentDeleteModal")?.classList.remove("hidden");
+}
+
+function closeDeleteModal(e) {
+  if (!e || e.target === $("studentDeleteModal") || e.type === "click") {
+    $("studentDeleteModal")?.classList.add("hidden");
+    studentToDeleteId = null;
+  }
+}
+
+function confirmDeleteStudent() {
+  if (!studentToDeleteId) return;
+  const id = studentToDeleteId;
+  closeDeleteModal();
 
   data.students = data.students.filter(x => x.id !== id);
   data.enrollments = data.enrollments.filter(e => e.student !== id);
   delete data.grades[id];
+
   persist();
   renderAll();
   toast(`Student ${id} removed.`);
 }
 
+// ==================== VIEW MODAL ====================
 function viewStudentModal(id) {
   const s = data.students.find(x => x.id === id);
   if (!s) return;
 
   const grades = data.grades[s.id] || [];
   const subjects = grades.map(g => g[0]);
-  const enr = data.enrollments.find(e => e.student === s.id) || {};
   const gpa = avgOf(grades);
+  const currentStatus = getStudentStatus(s.id);
+  const statusBadgeClass = currentStatus.toLowerCase() === "enrolled" ? "enrolled" : "pending";
 
   $("modalStudentName").textContent = formatNameId(s);
   $("modalStudentID").textContent = `ID: ${s.id}`;
@@ -75,8 +125,7 @@ function viewStudentModal(id) {
       <div class="modal-item"><small>Full Name</small><strong>${esc(s.name)}</strong></div>
       <div class="modal-item"><small>Student ID Number</small><strong>${esc(s.id)}</strong></div>
       <div class="modal-item"><small>Grade &amp; Section</small><strong>${esc(s.grade)} - ${esc(s.section)}</strong></div>
-      <div class="modal-item"><small>Academic Status</small><strong><span class="badge ${esc(s.status.toLowerCase())}">${esc(s.status)}</span></strong></div>
-      <div class="modal-item"><small>Enrollment Status</small><strong><span class="badge ${esc((enr.enrollmentStatus || "Enrolled").toLowerCase())}">${esc(enr.enrollmentStatus || "Enrolled")}</span></strong></div>
+      <div class="modal-item"><small>Status</small><strong><span class="badge ${statusBadgeClass}">${esc(currentStatus)}</span></strong></div>
       <div class="modal-item"><small>General Average</small><strong>${gpa}</strong></div>
       <div class="modal-item"><small>Contact Number</small><strong>${esc(s.contact || "N/A")}</strong></div>
       <div class="modal-item"><small>Guardian</small><strong>${esc(s.guardian || "N/A")}</strong></div>

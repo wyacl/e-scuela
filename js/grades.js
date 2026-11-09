@@ -3,18 +3,77 @@ function populateGradeFilters() {
   if (y) {
     y.innerHTML = `<option value="">All Year Levels</option>` + gradeLevels.map(g => `<option value="${g}">${g}</option>`).join("");
   }
+  updateGradeSectionOptions();
+}
+
+function updateGradeSectionOptions() {
+  const year = $("gradeFilterYear")?.value || "";
+  const strand = $("gradeFilterStrand")?.value || "";
+  const secSelect = $("gradeFilterSection");
+  if (!secSelect) return;
+
+  const currentSec = secSelect.value;
+  const isSHS = year === "Grade 11" || year === "Grade 12";
+  const isJHS = year !== "" && !isSHS;
+
+  let options = ['<option value="">All Sections</option>'];
+
+  if (isJHS) {
+    options.push(
+      '<option value="Section A">Section A</option>',
+      '<option value="Section B">Section B</option>',
+      '<option value="Section C">Section C</option>'
+    );
+  } else if (isSHS) {
+    const strands = strand ? [strand] : ["STEM", "ABM", "HUMSS"];
+    strands.forEach(st => {
+      options.push(
+        `<option value="${st}-A">${st}-A</option>`,
+        `<option value="${st}-B">${st}-B</option>`,
+        `<option value="${st}-C">${st}-C</option>`
+      );
+    });
+  } else {
+    options.push(
+      '<option value="Section A">Section A</option>',
+      '<option value="Section B">Section B</option>',
+      '<option value="Section C">Section C</option>'
+    );
+    ["STEM", "ABM", "HUMSS"].forEach(st => {
+      options.push(
+        `<option value="${st}-A">${st}-A</option>`,
+        `<option value="${st}-B">${st}-B</option>`,
+        `<option value="${st}-C">${st}-C</option>`
+      );
+    });
+  }
+
+  secSelect.innerHTML = options.join("");
+
+  if (currentSec && options.some(opt => opt.includes(`value="${currentSec}"`))) {
+    secSelect.value = currentSec;
+  } else {
+    secSelect.value = "";
+  }
 }
 
 function handleGradeYearChange() {
   const year = $("gradeFilterYear")?.value || "";
   const isJHS = year !== "" && year !== "Grade 11" && year !== "Grade 12";
   const strandEl = $("gradeFilterStrand");
-  if (strandEl) strandEl.style.display = isJHS ? "none" : "";
+
+  if (strandEl) {
+    strandEl.style.display = isJHS ? "none" : "";
+    if (isJHS) strandEl.value = "";
+  }
+
+  updateGradeSectionOptions();
   filterGradeStudents();
 }
 
-function handleGradeStrandChange() { 
-  filterGradeStudents(); 
+function handleGradeStrandChange() {
+  updateGradeSectionOptions();
+  filterGradeStudents();
 }
 
 function filterGradeStudents() {
@@ -31,7 +90,8 @@ function filterGradeStudents() {
     if (sec && s.section !== sec) return false;
     if (strand) {
       const enr = data.enrollments.find(e => e.student === s.id);
-      if (enr && enr.strand !== strand) return false;
+      // Require an active enrollment record with a matching strand
+      if (!enr || enr.strand !== strand) return false;
     }
     return true;
   });
@@ -39,7 +99,6 @@ function filterGradeStudents() {
   if (filtered.length) {
     el.disabled = false;
     el.innerHTML = filtered.map(s => `<option value="${esc(s.id)}">${esc(formatNameId(s))}</option>`).join("");
-    // Preserves the currently edited student instead of snapping back to index 0
     if (currentSelected && filtered.some(s => s.id === currentSelected)) {
       el.value = currentSelected;
     } else {

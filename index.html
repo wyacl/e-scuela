@@ -16,10 +16,11 @@
   <link rel="stylesheet" href="css/modal.css">
   <link rel="stylesheet" href="css/performance.css">
   <link rel="stylesheet" href="css/reports.css">
+  <link rel="stylesheet" href="css/faculty.css">
 </head>
 <body>
 
-<!-- ==================== LOGIN VIEW ==================== -->
+  <!-- ==================== LOGIN VIEW ==================== -->
   <div id="login" class="login">
     <div class="login-card-container">
       
@@ -132,6 +133,18 @@
             </div>
           </div>
         </div>
+
+      <!-- Admin Announcements Feed -->
+      <div class="panel" style="margin-top: 18px;">
+        <div class="section-head">
+          <h3><i class="fa-solid fa-bullhorn" style="color:var(--primary);margin-right:8px;"></i>Faculty Announcements &amp; Notices</h3>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="badge enrolled" id="adminNoticeCount">0 Active</span>
+            <button class="secondary table-btn" onclick="showPage('adminAnnouncements')">Manage All</button>
+          </div>
+        </div>
+        <div id="adminAnnouncementsList"></div>
+      </div>
       </section>
 
       <!-- 2. STUDENT INFORMATION -->
@@ -152,8 +165,8 @@
               <thead>
                 <tr>
                   <th>Student</th>
+                  <th>ID Number</th>
                   <th>Grade</th>
-                  <th>Section</th>
                   <th>Status</th>
                   <th>Action</th>
                 </tr>
@@ -171,19 +184,24 @@
               <input id="fId" placeholder="0000-000">
             </div>
             <div class="field">
-              <label for="fName">Full Name</label>
-              <input id="fName" placeholder="e.g. Juan Dela Cruz">
-            </div>
-            <div class="field">
               <label for="fGrade">Grade</label>
               <select id="fGrade"></select>
             </div>
             <div class="field">
-              <label for="fStatus">Status</label>
-              <select id="fStatus">
-                <option value="Regular">Regular</option>
-                <option value="Irregular">Irregular</option>
-              </select>
+              <label for="fLastName">Last Name</label>
+              <input id="fLastName" placeholder="e.g. Dela Cruz">
+            </div>
+            <div class="field">
+              <label for="fFirstName">First Name</label>
+              <input id="fFirstName" placeholder="e.g. Juan">
+            </div>
+            <div class="field">
+              <label for="fMiddleName">Middle Name</label>
+              <input id="fMiddleName" placeholder="e.g. Santos (optional)">
+            </div>
+            <div class="field">
+              <label for="fSuffix">Suffix</label>
+              <input id="fSuffix" placeholder="e.g. Jr., III (optional)">
             </div>
             <div class="field">
               <label for="fContact">Contact Number</label>
@@ -233,18 +251,15 @@
               <label for="eSection">Section</label>
               <select id="eSection"></select>
             </div>
-            <div class="field date-field-container">
+            <div class="field date-field-container" style="cursor: not-allowed;">
               <label for="eDate">Enrollment Date</label>
-              <input id="eDate" type="date">
-            </div>
-            <div class="field">
-              <label for="eStatus">Academic Status (Auto-synced)</label>
-              <input id="eStatus" readonly style="background:#f8fafc;cursor:not-allowed;font-weight:700;">
+              <input id="eDate" type="date" readonly tabindex="-1" style="background:#f8fafc;cursor:not-allowed;pointer-events:none;">
             </div>
             <div class="field">
               <label for="eEnrollmentStatus">Enrollment Status</label>
               <select id="eEnrollmentStatus">
                 <option value="Enrolled">Enrolled</option>
+                <option value="Pending">Pending</option>
                 <option value="Dropped">Dropped</option>
               </select>
             </div>
@@ -273,7 +288,6 @@
                   <th>Section</th>
                   <th>Enrollment Date</th>
                   <th>Status</th>
-                  <th>Enrollment Status</th>
                 </tr>
               </thead>
               <tbody id="enrollmentTable"></tbody>
@@ -385,6 +399,33 @@
         </div>
       </section>
 
+      <!-- 6.5. ANNOUNCEMENTS (ADMIN) -->
+      <section id="adminAnnouncements" class="page hidden">
+        <div class="grid2">
+          <div class="panel">
+            <h3>Post Announcement</h3>
+            <div class="field">
+              <label for="adminNoticeTitle">Notice Title</label>
+              <input id="adminNoticeTitle" placeholder="e.g. Schedule of Quizzes / School Event">
+            </div>
+            <div class="field">
+              <label for="adminNoticeTarget">Target Audience / Class</label>
+              <select id="adminNoticeTarget"></select>
+            </div>
+            <div class="field">
+              <label for="adminNoticeContent">Announcement Content</label>
+              <textarea id="adminNoticeContent" rows="4" style="width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;resize:vertical;" placeholder="Write message for students and faculty..."></textarea>
+            </div>
+            <button class="primary" onclick="postAdminAnnouncement()"><i class="fa-solid fa-paper-plane fa-fw"></i> Post Announcement</button>
+          </div>
+
+          <div class="panel">
+            <h3>Active Notice Board</h3>
+            <div id="adminAnnouncementList"></div>
+          </div>
+        </div>
+      </section>
+
       <!-- 7. REPORTS -->
       <section id="reports" class="page hidden">
         <div class="panel">
@@ -419,8 +460,8 @@
                   <td><span class="badge regular">Active</span></td>
                 </tr>
                 <tr>
-                  <td>faculty</td>
-                  <td>Faculty</td>
+                  <td>salette.maria</td>
+                  <td>Prof. Maria Santos</td>
                   <td>Faculty</td>
                   <td><span class="badge regular">Active</span></td>
                 </tr>
@@ -442,7 +483,233 @@
         </div>
       </section>
 
-      <!-- ==================== STUDENT PORTAL (SUBJECT STATUS REMOVED) ==================== -->
+      <!-- ==================== FACULTY PORTAL PAGES ==================== -->
+
+      <!-- 1. FACULTY DASHBOARD -->
+      <section id="facultyDashboard" class="page hidden">
+        <div class="faculty-welcome">
+          <div>
+            <h2 id="facultyWelcomeName">Welcome, Faculty</h2>
+            <p>Escuela Integrated Faculty &amp; Grading Portal</p>
+          </div>
+          <span class="badge gold" id="facultyDeptBadge">Senior High School</span>
+        </div>
+
+        <div class="cards">
+          <div class="card"><div class="label">Assigned Classes</div><div class="value" id="facCardClasses">0</div></div>
+          <div class="card"><div class="label">Total Students</div><div class="value" id="facCardStudents">0</div></div>
+          <div class="card"><div class="label">Active Notices</div><div class="value" id="facCardNotices">0</div></div>
+        </div>
+
+        <div class="grid2">
+          <div class="panel">
+            <h3><i class="fa-solid fa-calendar-day" style="color:var(--primary);margin-right:6px;"></i> Teaching Schedule</h3>
+            <div id="facultyUpcomingSchedule"></div>
+          </div>
+          <div class="panel">
+            <div class="section-head">
+              <h3><i class="fa-solid fa-bullhorn" style="color:var(--primary);margin-right:6px;"></i> Recent Notices</h3>
+              <button class="secondary table-btn" onclick="showPage('facultyAnnouncements')">View All</button>
+            </div>
+            <div id="facultyRecentNotices"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. MY CLASSES -->
+      <section id="facultyClasses" class="page hidden">
+        <div class="panel">
+          <div class="section-head">
+            <h3>My Handled Classes</h3>
+            <small style="color:var(--text-muted);">Select a class to manage its students, grading sheets, and attendance</small>
+          </div>
+          <div id="facultyClassesGrid" class="faculty-classes-grid"></div>
+        </div>
+
+        <div id="facultyClassStudentsView" class="panel hidden">
+          <div class="section-head">
+            <h3 id="facultyClassTitle">Class Student List</h3>
+            <button class="secondary table-btn" onclick="$('facultyClassStudentsView').classList.add('hidden')"><i class="fa-solid fa-xmark"></i> Hide List</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Student Name</th>
+                  <th>ID Number</th>
+                  <th>Status</th>
+                  <th>Quick Action</th>
+                </tr>
+              </thead>
+              <tbody id="facultyClassStudentsTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. GRADES ENTRY -->
+      <section id="facultyGrades" class="page hidden">
+        <div class="panel">
+          <div class="section-head">
+            <h3>Grades Entry</h3>
+            <div class="filters">
+              <select id="facGradeClassSelect" onchange="renderFacultyGrades()"></select>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 48px; text-align: center;">#</th>
+                  <th>Student Name</th>
+                  <th style="width: 75px; text-align: center;">1st</th>
+                  <th style="width: 75px; text-align: center;">2nd</th>
+                  <th style="width: 75px; text-align: center;">3rd</th>
+                  <th style="width: 75px; text-align: center;">4th</th>
+                  <th style="width: 80px; text-align: center;">Final</th>
+                  <th style="width: 100px; text-align: center;">Status</th>
+                </tr>
+              </thead>
+              <tbody id="facGradesEntryTable"></tbody>
+            </table>
+          </div>
+
+          <div class="actions">
+            <button class="primary" onclick="saveFacultyGrades()"><i class="fa-solid fa-floppy-disk fa-fw"></i> Save Grades</button>
+            <button class="secondary" onclick="showPage('facultyReports')"><i class="fa-solid fa-print fa-fw"></i> Print Grade Sheet</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. ATTENDANCE -->
+      <section id="facultyAttendance" class="page hidden">
+        <div class="panel">
+          <div class="section-head">
+            <h3>Class Attendance Marking</h3>
+            <div class="filters">
+              <select id="facAttClassSelect" onchange="renderFacultyAttendance()"></select>
+              <input id="facAttDate" type="date" onchange="renderFacultyAttendance()">
+              <div class="fac-att-btn-group">
+                <button type="button" id="facAttModeDailyBtn" class="fac-att-btn active present" onclick="toggleAttendanceMode('daily')">Daily Marking</button>
+                <button type="button" id="facAttModeMonthlyBtn" class="fac-att-btn" onclick="toggleAttendanceMode('monthly')">Monthly Log</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="facAttDailySection">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <span style="font-size:12.5px;color:var(--text-muted);">Mark attendance status for each enrolled student</span>
+              <button class="secondary table-btn" onclick="markAllPresent()"><i class="fa-solid fa-check-double"></i> Mark All Present</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Student Name</th>
+                    <th>ID Number</th>
+                    <th>Attendance Status</th>
+                  </tr>
+                </thead>
+                <tbody id="facAttendanceDailyTable"></tbody>
+              </table>
+            </div>
+            <div class="actions">
+              <button class="primary" onclick="saveFacultyAttendance()"><i class="fa-solid fa-floppy-disk fa-fw"></i> Save Attendance</button>
+            </div>
+          </div>
+
+          <div id="facAttMonthlySection" class="hidden">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Student Name</th>
+                    <th>Present</th>
+                    <th>Late</th>
+                    <th>Absent</th>
+                    <th>Excused</th>
+                    <th>Attendance Rate</th>
+                  </tr>
+                </thead>
+                <tbody id="facAttendanceMonthlyTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. ANNOUNCEMENTS -->
+      <section id="facultyAnnouncements" class="page hidden">
+        <div class="grid2">
+          <div class="panel">
+            <h3>Post Class Announcement</h3>
+            <div class="field">
+              <label for="facNoticeTitle">Notice Title</label>
+              <input id="facNoticeTitle" placeholder="e.g. Schedule of Quizzes / Project Deadline">
+            </div>
+            <div class="field">
+              <label for="facNoticeTarget">Target Audience / Class</label>
+              <select id="facNoticeTarget"></select>
+            </div>
+            <div class="field">
+              <label for="facNoticeContent">Announcement Content</label>
+              <textarea id="facNoticeContent" rows="4" style="width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;resize:vertical;" placeholder="Write message for students..."></textarea>
+            </div>
+            <button class="primary" onclick="postFacultyAnnouncement()"><i class="fa-solid fa-paper-plane fa-fw"></i> Post Announcement</button>
+          </div>
+
+          <div class="panel">
+            <h3>Active Notice Board</h3>
+            <div id="facAnnouncementList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. REPORTS -->
+      <section id="facultyReports" class="page hidden">
+        <div class="panel">
+          <div class="section-head">
+            <h3>Faculty Academic Reports</h3>
+            <small style="color:var(--text-muted);">Preview official class grading sheets, print, or export to PDF</small>
+          </div>
+          <div class="report-list" id="facReportsList"></div>
+        </div>
+      </section>
+
+      <!-- 7. PROFILE & SETTINGS -->
+      <section id="facultyProfile" class="page hidden">
+        <div class="grid2">
+          <div class="panel">
+            <h3>Faculty Information</h3>
+            <div id="facultyProfileDetails" class="profile-box" style="margin-bottom:16px;"></div>
+            <h4>Handled Classes &amp; Subjects</h4>
+            <div id="facultyHandledClassesList"></div>
+          </div>
+
+          <div class="panel">
+            <h3>Contact &amp; Account Settings</h3>
+            <div class="field">
+              <label for="facProfileEmail">Academic Email</label>
+              <input id="facProfileEmail" type="email">
+            </div>
+            <div class="field">
+              <label for="facProfileContact">Contact Number</label>
+              <input id="facProfileContact">
+            </div>
+            <div class="field">
+              <label for="facProfileOffice">Assigned Faculty Room / Office</label>
+              <input id="facProfileOffice">
+            </div>
+            <button class="primary" onclick="saveFacultyProfileSettings()"><i class="fa-solid fa-check fa-fw"></i> Update Profile</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== STUDENT PORTAL ==================== -->
       <section id="studentHome" class="page hidden">
         <div class="student-welcome">
           <h2 id="studentWelcomeName">Welcome, Student</h2>
@@ -451,6 +718,15 @@
         <div class="grid2">
           <div class="panel"><h3>My Information</h3><div id="studentProfile" class="profile-box"></div></div>
           <div class="panel"><h3>Academic Summary</h3><div id="mySummary"></div></div>
+        </div>
+
+        <!-- Student Dashboard Announcements Feed -->
+        <div class="panel" style="margin-top: 18px;">
+          <div class="section-head">
+            <h3><i class="fa-solid fa-bullhorn" style="color:var(--primary);margin-right:8px;"></i>Class Announcements</h3>
+            <span class="badge pending">Teacher Notices</span>
+          </div>
+          <div id="studentAnnouncementsList"></div>
         </div>
       </section>
 
@@ -505,6 +781,16 @@
               <tbody id="myScheduleTable"></tbody>
             </table>
           </div>
+        </div>
+      </section>
+
+      <section id="studentAnnouncements" class="page hidden">
+        <div class="panel">
+          <div class="section-head">
+            <h3><i class="fa-solid fa-bullhorn" style="color:var(--primary);margin-right:8px;"></i>Class Announcements &amp; Notices</h3>
+            <span class="badge enrolled" id="studentNoticeCount">0 Active</span>
+          </div>
+          <div id="studentAnnouncementsFullList"></div>
         </div>
       </section>
 
@@ -589,10 +875,39 @@
     </div>
   </div>
 
+  <!-- 3. Student Delete Confirmation Modal -->
+  <div id="studentDeleteModal" class="modal-backdrop hidden" onclick="closeDeleteModal(event)">
+    <div class="modal-card" style="max-width: 440px;" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header-info">
+          <div class="modal-avatar" style="background:#fee2e2;color:#b91c1c;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div>
+            <h3 style="color:#b91c1c;">Remove Student</h3>
+            <span id="deleteStudentID" class="modal-badge">ID: 0000-000</span>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeDeleteModal()" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="margin: 0; font-size: 14px; color: var(--text-main); line-height: 1.6;">
+          Are you sure you want to remove <strong id="deleteStudentName"></strong>? This will permanently delete the student, their enrollment records, and all academic grades.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="secondary" onclick="closeDeleteModal()">Cancel</button>
+        <button class="primary" onclick="confirmDeleteStudent()" style="background:#b91c1c !important;color:#fff !important;border:none !important;box-shadow:0 4px 12px rgba(185,28,28,0.3) !important;">Confirm Remove</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
 
-<!-- PDF Engine CDN -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- PDF Engine CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <!-- Section-separated Scripts -->
   <script src="js/store.js"></script>
@@ -605,6 +920,7 @@
   <script src="js/status.js"></script>
   <script src="js/reports.js"></script>
   <script src="js/student-portal.js"></script>
+  <script src="js/faculty.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

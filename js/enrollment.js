@@ -4,12 +4,21 @@ function syncEnrollmentStudentData() {
   if (!s) return;
 
   if ($("eGrade")) $("eGrade").value = s.grade || "Grade 1";
-  if ($("eStatus")) $("eStatus").value = s.status || "Regular";
 
   const existing = data.enrollments.find(e => e.student === sId);
-  if ($("eEnrollmentStatus")) $("eEnrollmentStatus").value = existing?.enrollmentStatus || "Enrolled";
+  if ($("eEnrollmentStatus")) {
+    $("eEnrollmentStatus").value = existing?.enrollmentStatus || "Enrolled";
+  }
 
-  // Sync strand FIRST so updateEnrollmentFields builds the correct section choices
+  // Lock picker strictly to today's date (disables both past and future dates)
+  const today = new Date().toISOString().slice(0, 10);
+  const dateInput = $("eDate");
+  if (dateInput) {
+    dateInput.value = today;
+    dateInput.min = today;
+    dateInput.max = today;
+  }
+
   if ($("eStrand") && existing?.strand && existing.strand !== "N/A") {
     $("eStrand").value = existing.strand;
   }
@@ -34,10 +43,14 @@ function updateEnrollmentFields() {
 
   if (isSHS) {
     const strand = $("eStrand")?.value || "STEM";
-    const sections = strand === "STEM" ? ["STEM-A", "STEM-B"] : strand === "ABM" ? ["ABM-A", "ABM-B"] : ["HUMSS-A", "HUMSS-B"];
+    const sections = [`${strand}-A`, `${strand}-B`, `${strand}-C`];
     sectionSelect.innerHTML = sections.map(sec => `<option value="${sec}">${sec}</option>`).join("");
   } else {
-    sectionSelect.innerHTML = `<option value="Section A">Section A</option><option value="Section B">Section B</option><option value="Section C">Section C</option>`;
+    sectionSelect.innerHTML = [
+      `<option value="Section A">Section A</option>`,
+      `<option value="Section B">Section B</option>`,
+      `<option value="Section C">Section C</option>`
+    ].join("");
   }
 }
 
@@ -64,15 +77,21 @@ function saveEnrollment() {
   if (!s) return toast("Select a student.");
 
   const section = val("eSection");
-  const date = val("eDate") || new Date().toISOString().slice(0, 10);
+  const today = new Date().toISOString().slice(0, 10);
+  const date = today;
+
+  if ($("eDate")) {
+    $("eDate").value = today;
+    $("eDate").min = today;
+    $("eDate").max = today;
+  }
+
   const enrollmentStatus = val("eEnrollmentStatus") || "Enrolled";
 
   const checked = Array.from(document.querySelectorAll("input[name='enrollSubject']:checked")).map(c => c.value);
-  if (!checked.length && enrollmentStatus === "Enrolled") return toast("Please select at least one subject.");
-
-  const currentGrades = data.grades[id] || [];
-  const gradeMap = new Map(currentGrades.map(g => [g[0], g]));
-  data.grades[id] = checked.map(sub => gradeMap.has(sub) ? gradeMap.get(sub) : [sub, "", "", "", ""]);
+  if (!checked.length && enrollmentStatus === "Enrolled") {
+    return toast("Please select at least one subject.");
+  }
 
   const rec = {
     student: id,
@@ -81,14 +100,24 @@ function saveEnrollment() {
     strand: (s.grade === "Grade 11" || s.grade === "Grade 12") ? (val("eStrand") || "STEM") : "N/A",
     section,
     date,
-    status: s.status,
+    status: enrollmentStatus,
     enrollmentStatus
   };
 
-  const idx = data.enrollments.findIndex(e => e.student === id);
-  if (idx !== -1) data.enrollments[idx] = rec; else data.enrollments.push(rec);
+  const currentGrades = data.grades[id] || [];
+  const gradeMap = new Map(currentGrades.map(g => [g[0], g]));
+  data.grades[id] = checked.map(sub => gradeMap.has(sub) ? gradeMap.get(sub) : [sub, "", "", "", ""]);
 
-  s.section = enrollmentStatus === "Dropped" ? "Dropped" : section;
+  const idx = data.enrollments.findIndex(e => e.student === id);
+  if (idx !== -1) {
+    data.enrollments[idx] = rec;
+  } else {
+    data.enrollments.push(rec);
+  }
+
+  s.section = enrollmentStatus === "Dropped" ? "Dropped" : (enrollmentStatus === "Pending" ? "Pending Enrollment" : section);
+  s.status = enrollmentStatus;
+
   persist();
   renderAll();
   toast(`Enrollment updated for ${formatNameId(s)}`);
@@ -97,6 +126,9 @@ function saveEnrollment() {
 function renderEnrollments() {
   $("enrollmentTable").innerHTML = data.enrollments.map(e => {
     const s = data.students.find(x => x.id === e.student);
+    const statusVal = e.enrollmentStatus || "Pending";
+    const statusClass = statusVal.toLowerCase();
+
     return `<tr>
       <td><b>${esc(s ? formatNameId(s) : e.student)}</b></td>
       <td>${esc(e.schoolYear)}</td>
@@ -104,8 +136,7 @@ function renderEnrollments() {
       <td>${esc(e.strand)}</td>
       <td>${esc(e.section)}</td>
       <td>${esc(e.date || "2026-06-15")}</td>
-      <td><span class="badge ${esc(e.status.toLowerCase())}">${esc(e.status)}</span></td>
-      <td><span class="badge ${esc(e.enrollmentStatus.toLowerCase())}">${esc(e.enrollmentStatus)}</span></td>
+      <td><span class="badge ${esc(statusClass)}">${esc(statusVal)}</span></td>
     </tr>`;
-  }).join("") || `<tr><td colspan="8">No enrollment records found.</td></tr>`;
+  }).join("") || `<tr><td colspan="7">No enrollment records found.</td></tr>`;
 }
