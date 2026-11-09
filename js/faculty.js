@@ -20,7 +20,6 @@ function initFacultyData() {
     };
   }
 
-  // Ensure rooms exist if data was already cached in localStorage
   const roomDefaults = {
     "CLS-1": "Computer Lab 2",
     "CLS-2": "Computer Lab 1",
@@ -188,7 +187,7 @@ function openClassStudentList(classId) {
         <td>${idx + 1}</td>
         <td><b>${esc(s.name)}</b></td>
         <td>${esc(s.id)}</td>
-        <td><span class="badge regular">${esc(s.status || "Regular")}</span></td>
+        <td><span class="badge regular">${esc(s.status || "Enrolled")}</span></td>
         <td style="white-space: nowrap;">
           <button class="secondary table-btn" onclick="directToStudentGrades('${cls.id}', '${s.id}')"><i class="fa-solid fa-pen-to-square"></i> Grades</button>
           <button class="secondary table-btn" onclick="directToStudentAttendance('${cls.id}')"><i class="fa-solid fa-clipboard-user"></i> Attendance</button>
@@ -421,7 +420,7 @@ function renderFacultyMonthlyAttendance() {
 
   tableBody.innerHTML = students.map((s, idx) => {
     const stats = studentStats[s.id];
-    const rate = stats.total > 0 ? Math.round(((stats.present + stats.late) / stats.total) * 100) : 100;
+    const rate = stats.total > 0 ? Math.round(((stats.present + stats.late) / stats.total) * 100) : 0;
 
     return `
       <tr>
@@ -634,7 +633,7 @@ function generateFacultyReportHTML(title) {
 
     tableRowsHTML = students.map((s, idx) => {
       const st = studentStats[s.id] || { present: 0, late: 0, absent: 0, excused: 0, total: 0 };
-      const rate = st.total > 0 ? Math.round(((st.present + st.late) / st.total) * 100) : 100;
+      const rate = st.total > 0 ? Math.round(((st.present + st.late) / st.total) * 100) : 0;
       return `
         <tr style="border-bottom:1px solid #eee;">
           <td style="padding:8px;color:#888;">${idx + 1}</td>
@@ -644,7 +643,7 @@ function generateFacultyReportHTML(title) {
           <td style="padding:8px;text-align:center;font-weight:700;color:#b26a00;">${st.late}</td>
           <td style="padding:8px;text-align:center;font-weight:700;color:#b91c1c;">${st.absent}</td>
           <td style="padding:8px;text-align:center;">${st.excused}</td>
-          <td style="padding:8px;text-align:center;font-weight:800;color:${rate >= 80 ? '#2e7d32' : '#b91c1c'};">${rate}%</td>
+          <td style="padding:8px;text-align:center;font-weight:800;color:${rate >= 80 ? '#2e7d32' : (rate === 0 ? '#64748b' : '#b91c1c')};">${rate}%</td>
         </tr>
       `;
     }).join("") || `<tr><td colspan="8" style="padding:12px;text-align:center;">No students enrolled.</td></tr>`;

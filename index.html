@@ -548,14 +548,16 @@
         </div>
       </section>
 
-      <!-- 3. GRADES ENTRY -->
+<!-- 3. GRADES ENTRY -->
       <section id="facultyGrades" class="page hidden">
         <div class="panel">
           <div class="section-head">
             <h3>Grades Entry</h3>
-            <div class="filters">
-              <select id="facGradeClassSelect" onchange="renderFacultyGrades()"></select>
-            </div>
+          </div>
+
+          <div class="field">
+            <label for="facGradeClassSelect">Assigned Class &amp; Subject</label>
+            <select id="facGradeClassSelect" onchange="renderFacultyGrades()"></select>
           </div>
 
           <div class="table-wrap">
@@ -588,19 +590,29 @@
         <div class="panel">
           <div class="section-head">
             <h3>Class Attendance Marking</h3>
-            <div class="filters">
-              <select id="facAttClassSelect" onchange="renderFacultyAttendance()"></select>
-              <input id="facAttDate" type="date" onchange="renderFacultyAttendance()">
-              <div class="fac-att-btn-group">
-                <button type="button" id="facAttModeDailyBtn" class="fac-att-btn active present" onclick="toggleAttendanceMode('daily')">Daily Marking</button>
-                <button type="button" id="facAttModeMonthlyBtn" class="fac-att-btn" onclick="toggleAttendanceMode('monthly')">Monthly Log</button>
-              </div>
+          </div>
+
+          <div class="field">
+            <label for="facAttClassSelect">Assigned Class &amp; Subject</label>
+            <select id="facAttClassSelect" onchange="renderFacultyAttendance()"></select>
+          </div>
+
+          <div class="field">
+            <label for="facAttDate">Attendance Date</label>
+            <input id="facAttDate" type="date" onchange="renderFacultyAttendance()">
+          </div>
+
+          <div class="field">
+            <label>Attendance View Mode</label>
+            <div class="fac-att-mode-toggle">
+              <button type="button" id="facAttModeDailyBtn" class="active" onclick="toggleAttendanceMode('daily')">Daily Marking</button>
+              <button type="button" id="facAttModeMonthlyBtn" onclick="toggleAttendanceMode('monthly')">Monthly Log</button>
             </div>
           </div>
 
           <div id="facAttDailySection">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-              <span style="font-size:12.5px;color:var(--text-muted);">Mark attendance status for each enrolled student</span>
+            <div class="attendance-subbar">
+              <span>Mark attendance status for each enrolled student</span>
               <button class="secondary table-btn" onclick="markAllPresent()"><i class="fa-solid fa-check-double"></i> Mark All Present</button>
             </div>
             <div class="table-wrap">
