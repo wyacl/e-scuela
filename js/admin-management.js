@@ -657,6 +657,15 @@ function updateScheduleSectionFields(preferredSubject = "") {
   }
 }
 
+function formatTime12Hour(time24) {
+  const [hStr, mStr] = String(time24 || "").split(":");
+  const h = Number(hStr);
+  if (isNaN(h) || !mStr) return time24;
+  const ampm = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return `${h12}:${mStr} ${ampm}`;
+}
+
 function saveAdminSchedule() {
   const facultyId = val("schFaculty");
   const fac = (data.facultyList || []).find(f => f.id === facultyId);
@@ -676,10 +685,18 @@ function saveAdminSchedule() {
   const strand = isSHS ? (val("schStrand") || "ABM") : "N/A";
   const section = val("schSection") || (isSHS ? `${strand}-A` : "Section A");
   const day = val("schDay") || "Monday";
-  const time = val("schTime");
+  const startTime = val("schStartTime");
+  const endTime = val("schEndTime");
   const room = val("schRoom") || "Room 101";
 
-  if (!time) return toast("Please enter a class time slot (e.g. 8:00 AM - 9:00 AM).");
+  if (!startTime || !endTime) {
+    return toast("Please select both class start and end times.");
+  }
+  if (endTime <= startTime) {
+    return toast("Class end time must be later than the start time.");
+  }
+
+  const time = `${formatTime12Hour(startTime)} - ${formatTime12Hour(endTime)}`;
 
   if (!Array.isArray(data.schedules)) data.schedules = [];
 
@@ -699,8 +716,9 @@ function saveAdminSchedule() {
   });
 
   persist();
-  $("schTime").value = "";
-  $("schRoom").value = "";
+  if ($("schStartTime")) $("schStartTime").value = "";
+  if ($("schEndTime")) $("schEndTime").value = "";
+  if ($("schRoom")) $("schRoom").value = "";
   renderAll();
   toast(`Schedule added for ${fac.name} (${subject})`);
 }
