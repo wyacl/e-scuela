@@ -2,22 +2,52 @@
    ACADEMIC PERFORMANCE: TOP 1-3 HONORS LIST & CHARTS
    ========================================================== */
 
+.perf-groups-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.perf-group-card {
+  background: #fafafa;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--primary);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.perf-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.perf-group-header h4 {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
 /* Top 1-3 Honors List Container */
 .honors-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
 .honors-list-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 20px;
+  padding: 12px 14px;
   background: #ffffff;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   box-shadow: var(--shadow-sm);
   transition: transform var(--trans-fast), box-shadow var(--trans-fast), border-color var(--trans-fast);
   animation: cardEntrance 0.35s var(--ease-spring) both;
@@ -32,19 +62,21 @@
 .honors-left {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
+  min-width: 0;
 }
 
 .rank-tag {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 36px;
-  height: 36px;
+  min-width: 32px;
+  height: 32px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: -0.5px;
+  flex-shrink: 0;
 }
 
 .rank-tag.gold {
@@ -66,22 +98,24 @@
 }
 
 .honors-name {
-  font-size: 14.5px;
+  font-size: 13.5px;
   font-weight: 700;
   color: var(--primary-dark);
+  word-break: break-word;
 }
 
 .honors-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .honors-average {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 800;
   color: var(--text-main);
-  min-width: 55px;
+  min-width: 48px;
   text-align: right;
 }
 
@@ -118,27 +152,26 @@
 }
 
 @media (max-width: 768px) {
+  .perf-groups-container {
+    grid-template-columns: 1fr !important;
+  }
+
   .honors-list-item {
-    padding: 12px 14px;
-    gap: 10px;
+    padding: 10px 12px;
+    gap: 8px;
     flex-wrap: wrap;
   }
 
-  .honors-left {
-    gap: 10px;
-  }
-
   .honors-name {
-    font-size: 13px;
-    word-break: break-word;
+    font-size: 12.5px;
   }
 
   .honors-right {
-    gap: 10px;
+    gap: 8px;
     margin-left: auto;
   }
 
   .honors-average {
-    font-size: 15px;
+    font-size: 14px;
   }
 }

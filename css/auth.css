@@ -268,6 +268,38 @@
   animation: slideDownFade 0.25s ease-out;
 }
 
+.error:empty {
+  display: none;
+}
+
+.login-helper {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.find-account-link {
+  background: transparent;
+  border: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  color: #7d090f;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 6px;
+  transition: color var(--trans-fast);
+}
+
+.find-account-link:hover,
+.find-account-link:focus,
+.find-account-link:focus-visible,
+.find-account-link:active {
+  background: transparent;
+  outline: none;
+  color: #590407;
+  text-decoration: underline;
+}
+
 /* --------------------------------------------------
    RESPONSIVENESS (MOBILE VIEW)
    -------------------------------------------------- */

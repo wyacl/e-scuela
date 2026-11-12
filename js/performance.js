@@ -1,61 +1,201 @@
-// Academic Performance: List format (#1 Name Average With Honor) + Summary & Chart
+// Academic Performance: Filtered by Grade Level & SHS Strand (ABM / HUMSS)
 const bars = list => list.map(g => {
   const score = typeof calc(g) === "number" ? calc(g) : 0;
   return `<div class="bar" style="height:${Math.max(10, (score - 65) * 3)}px" title="${esc(g[0])}: ${score}"><span>${esc(g[0].slice(0, 5))}</span></div>`;
 }).join("");
 
-function renderPerformance() {
-  // 1. Calculate Rankings
-  const ranked = data.students.map(s => {
-    const gr = data.grades[s.id] || [];
-    const avg = Number(avgOf(gr));
-    let honors = "Regular Standing";
-    if (avg >= 98) honors = "With Highest Honors";
-    else if (avg >= 95) honors = "With High Honors";
-    else if (avg >= 90) honors = "With Honors";
+function getHonorStanding(avg) {
+  if (avg >= 98) return "With Highest Honors";
+  if (avg >= 95) return "With High Honors";
+  if (avg >= 90) return "With Honors";
+  return "Regular Standing";
+}
 
-    return {
-      student: s,
-      gpa: avg,
-      honors
-    };
-  }).sort((a, b) => b.gpa - a.gpa);
+function getStudentStrand(s) {
+  const enr = (data.enrollments || []).find(e => e.student === s.id);
+  if (enr && enr.strand && enr.strand !== "N/A") return enr.strand;
+  if (s.section) {
+    const prefix = s.section.split("-")[0];
+    if (shsStrands.includes(prefix)) return prefix;
+  }
+  return "N/A";
+}
 
-  // 2. Render Top 1–3 as a Clean List: #1 Name Average With Honor
-  const topList = ranked.slice(0, 3);
+function renderHonorsItemsHTML(rankedList) {
   const rankClasses = ["gold", "silver", "bronze"];
+  const top3 = rankedList.slice(0, 3);
 
-const listEl = $("topPerformersList") || $("topPerformersPodium");
-  if (listEl) {
-    listEl.innerHTML = topList.map((item, idx) => `
-      <div class="honors-list-item">
-        <div class="honors-left">
-          <span class="rank-tag ${rankClasses[idx]}">#${idx + 1}</span>
-          <strong class="honors-name">${esc(formatNameId(item.student))}</strong>
-        </div>
-        <div class="honors-right">
-          <span class="honors-average">${item.gpa.toFixed(2)}</span>
-          <span class="badge ${rankClasses[idx]}">${esc(item.honors)}</span>
-        </div>
-      </div>
-    `).join("") || `<p style="color:var(--text-muted);margin:0;">No honors recorded yet.</p>`;
+  if (!top3.length) {
+    return `<p style="color:var(--text-muted);font-size:12.5px;margin:6px 0;">No ranked students in this category yet.</p>`;
   }
 
-  // 3. Academic Summary
-  const all = Object.values(data.grades).flat();
-  const count = st => all.filter(g => statusOf(calc(g)) === st).length;
+  return `<div class="honors-list">` + top3.map((item, idx) => `
+    <div class="honors-list-item">
+      <div class="honors-left">
+        <span class="rank-tag ${rankClasses[idx]}">#${idx + 1}</span>
+        <strong class="honors-name">${esc(formatNameId(item.student))}</strong>
+      </div>
+      <div class="honors-right">
+        <span class="honors-average">${item.gpa.toFixed(2)}</span>
+        <span class="badge ${rankClasses[idx]}">${esc(item.honors)}</span>
+      </div>
+    </div>
+  `).join("") + `</div>`;
+}
+
+function handlePerfGradeChange() {
+  const grade = $("perfGradeFilter")?.value || "";
+  const isSHS = grade === "Grade 11" || grade === "Grade 12";
+  const strandEl = $("perfStrandFilter");
+
+  if (strandEl) {
+    strandEl.style.display = isSHS ? "" : "none";
+    if (!isSHS) strandEl.value = "";
+  }
+
+  renderPerformance();
+}
+
+function renderPerformance() {
+  // Populate Grade Filter Dropdown
+  const gradeFilterEl = $("perfGradeFilter");
+  if (gradeFilterEl) {
+    const oldVal = gradeFilterEl.value;
+    gradeFilterEl.innerHTML = `<option value="">All Grade Levels</option>` +
+      gradeLevels.map(g => `<option value="${g}">${g}</option>`).join("");
+    gradeFilterEl.value = oldVal;
+  }
+
+  const selectedGrade = gradeFilterEl?.value || "";
+  const isSHS = selectedGrade === "Grade 11" || selectedGrade === "Grade 12";
+  const strandFilterEl = $("perfStrandFilter");
+
+  if (strandFilterEl) {
+    strandFilterEl.style.display = isSHS ? "" : "none";
+    if (!isSHS) strandFilterEl.value = "";
+  }
+
+  const selectedStrand = isSHS ? (strandFilterEl?.value || "") : "";
+
+  // 1. Score all students
+  const scoredStudents = data.students.map(s => {
+    const gr = data.grades[s.id] || [];
+    const avg = Number(avgOf(gr));
+    return {
+      student: s,
+      strand: getStudentStrand(s),
+      gpa: avg,
+      honors: getHonorStanding(avg)
+    };
+  });
+
+  // 2. Top 1–3 Performers Card(s)
+  const byGradeEl = $("topPerformersByGrade");
+  if (byGradeEl) {
+    if (selectedGrade) {
+      const groupRanked = scoredStudents
+        .filter(item => item.student.grade === selectedGrade && (!selectedStrand || item.strand === selectedStrand))
+        .sort((a, b) => b.gpa - a.gpa);
+
+      const cardTitle = selectedStrand
+        ? `${selectedGrade} — ${selectedStrand} Strand`
+        : selectedGrade;
+
+      byGradeEl.innerHTML = `
+        <div class="perf-group-card">
+          <div class="perf-group-header">
+            <h4><i class="fa-solid fa-graduation-cap" style="color:var(--primary);margin-right:6px;"></i>${esc(cardTitle)}</h4>
+            <span class="badge enrolled">Top 1–3</span>
+          </div>
+          ${renderHonorsItemsHTML(groupRanked)}
+        </div>
+      `;
+    } else {
+      const activeGrades = gradeLevels.filter(g => scoredStudents.some(item => item.student.grade === g));
+      const targetGrades = activeGrades.length ? activeGrades : gradeLevels;
+
+      byGradeEl.innerHTML = targetGrades.map(g => {
+        const groupRanked = scoredStudents
+          .filter(item => item.student.grade === g)
+          .sort((a, b) => b.gpa - a.gpa);
+
+        return `
+          <div class="perf-group-card">
+            <div class="perf-group-header">
+              <h4><i class="fa-solid fa-graduation-cap" style="color:var(--primary);margin-right:6px;"></i>${esc(g)}</h4>
+              <span class="badge enrolled">Top 1–3</span>
+            </div>
+            ${renderHonorsItemsHTML(groupRanked)}
+          </div>
+        `;
+      }).join("");
+    }
+  }
+
+  // 3. Top 1–3 by Strand Panel (Only visible when All Grade Levels or Grade 11/12 with All Strands is selected)
+  const strandPanelEl = $("perfStrandPanel");
+  const byStrandEl = $("topPerformersByStrand");
+  const showStrandBreakdown = !selectedGrade || (isSHS && !selectedStrand);
+
+  if (strandPanelEl) {
+    strandPanelEl.style.display = showStrandBreakdown ? "" : "none";
+  }
+  if ($("perfStrandBadge")) {
+    $("perfStrandBadge").textContent = selectedGrade ? `${selectedGrade} Strands` : "Grade 11 & 12 Strands";
+  }
+
+  if (byStrandEl && showStrandBreakdown) {
+    byStrandEl.innerHTML = shsStrands.map(st => {
+      const strandRanked = scoredStudents
+        .filter(item => {
+          const matchesGrade = selectedGrade
+            ? item.student.grade === selectedGrade
+            : (item.student.grade === "Grade 11" || item.student.grade === "Grade 12");
+          return matchesGrade && item.strand === st;
+        })
+        .sort((a, b) => b.gpa - a.gpa);
+
+      return `
+        <div class="perf-group-card">
+          <div class="perf-group-header">
+            <h4><i class="fa-solid fa-award" style="color:var(--primary);margin-right:6px;"></i>${esc(st)} Strand</h4>
+            <span class="badge gold">Top 1–3</span>
+          </div>
+          ${renderHonorsItemsHTML(strandRanked)}
+        </div>
+      `;
+    }).join("");
+  }
+
+  // 4. Filter Students for Academic Summary & Performance by Subject Chart
+  const matchingStudents = data.students.filter(s => {
+    if (selectedGrade && s.grade !== selectedGrade) return false;
+    if (selectedStrand && getStudentStrand(s) !== selectedStrand) return false;
+    return true;
+  });
+
+  const scopeLabel = selectedGrade
+    ? (selectedStrand ? ` (${selectedGrade} - ${selectedStrand})` : ` (${selectedGrade})`)
+    : "";
+
+  if ($("perfSummaryTitle")) $("perfSummaryTitle").textContent = `Academic Summary${scopeLabel}`;
+  if ($("perfChartTitle")) $("perfChartTitle").textContent = `Performance by Subject${scopeLabel}`;
+
+  const filteredGrades = matchingStudents.flatMap(s => data.grades[s.id] || []);
+  const count = st => filteredGrades.filter(g => statusOf(calc(g)) === st).length;
+
   const summaryEl = $("performanceSummary");
   if (summaryEl) {
     summaryEl.innerHTML = `
-      <p><b>General Average:</b> ${avgOf(all)}</p>
+      <p><b>General Average:</b> ${avgOf(filteredGrades)}</p>
       <p><b>Passed Subject Records:</b> ${count("Passed")}</p>
       <p><b>Failed Subject Records:</b> ${count("Failed")}</p>
-      <p><b>Dropped Subjects:</b> 0</p>`;
+      <p><b>Pending Subject Records:</b> ${count("Pending")}</p>`;
   }
 
-  // 4. Performance by Subject Chart
+  // 5. Performance by Subject Chart (Filtered)
   const subjectTotals = {};
-  all.forEach(g => {
+  filteredGrades.forEach(g => {
     const sub = g[0];
     const score = calc(g);
     if (typeof score === "number") {
@@ -70,6 +210,8 @@ const listEl = $("topPerformersList") || $("topPerformersPodium");
 
   const chartEl = $("performanceChart");
   if (chartEl) {
-    chartEl.innerHTML = bars(subjectAverages);
+    chartEl.innerHTML = subjectAverages.length
+      ? bars(subjectAverages)
+      : `<p style="color:var(--text-muted);font-size:13px;margin:auto;text-align:center;width:100%;">No subject performance data for this selection.</p>`;
   }
 }

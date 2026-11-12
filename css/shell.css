@@ -556,11 +556,9 @@ input[type="checkbox"],
     gap: 10px !important;
   }
 
-  /* 3. INPUT BOUNDS */
+  /* 3. INPUT & DROPDOWN OVERLAP PREVENTION */
   .form-grid input:not([type="checkbox"]):not([type="radio"]),
-  .form-grid select,
-  .field input:not([type="checkbox"]):not([type="radio"]),
-  .field select {
+  .field input:not([type="checkbox"]):not([type="radio"]) {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
@@ -568,26 +566,86 @@ input[type="checkbox"],
     box-sizing: border-box !important;
   }
 
-  /* 4. STUDENT DROPDOWNS */
+  .form-grid select,
+  .field select {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 42px !important;
+    padding: 8px 34px 8px 12px !important;
+    font-size: 13.5px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 4. FILTER BARS & STUDENT DROPDOWNS */
+  .filters {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 8px !important;
+    margin: 8px 0 12px !important;
+  }
+
+  .section-head .filters {
+    margin: 0 !important;
+  }
+
+  .filters input {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 42px !important;
+    padding: 8px 12px !important;
+    font-size: 13.5px !important;
+    box-sizing: border-box !important;
+  }
+
+  .filters select {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 42px !important;
+    padding: 8px 34px 8px 12px !important;
+    font-size: 13.5px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    box-sizing: border-box !important;
+  }
+
   #eStudent,
   #gradeStudent {
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
     height: 42px !important;
-    padding-right: 38px !important;
-    margin: 4px 0 10px 0 !important;
+    padding: 8px 34px 8px 12px !important;
+    font-size: 13.5px !important;
+    margin: 0 !important;
   }
 
   .grades-filter-bar {
     display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: minmax(0, 1fr) !important;
     gap: 8px !important;
     width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
   }
 
-  .grades-filter-bar select:last-child {
-    grid-column: span 2 !important;
+  .grades-filter-bar select {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 42px !important;
+    padding: 8px 34px 8px 12px !important;
+    font-size: 13.5px !important;
+    grid-column: auto !important;
   }
 
   /* 5. GRADES MANAGEMENT: HORIZONTAL TOUCH SCROLL (ALL COLUMNS & PASSED VISIBLE) */
@@ -695,7 +753,7 @@ input[type="checkbox"],
   }
 
   .portal-cards {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: minmax(0, 1fr) !important;
     gap: 8px !important;
   }
 
@@ -712,7 +770,7 @@ input[type="checkbox"],
   }
 
   .form-grid, .grid2, .profile-box {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 
   .span-2 {

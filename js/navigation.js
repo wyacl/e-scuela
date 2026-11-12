@@ -26,7 +26,10 @@ function openFaculty() {
   buildNav([
     ["dashboard", "fa-solid fa-table-columns fa-fw", "Dashboard"],
     ["students", "fa-solid fa-user-graduate fa-fw", "Student Information"],
+    ["facultyMembers", "fa-solid fa-chalkboard-user fa-fw", "Faculty Member"],
     ["enrollment", "fa-solid fa-id-card fa-fw", "Enrollment"],
+    ["adminSubjects", "fa-solid fa-book fa-fw", "Subjects"],
+    ["adminSchedule", "fa-solid fa-calendar-days fa-fw", "Schedule"],
     ["grades", "fa-solid fa-check fa-fw", "Grades"],
     ["performance", "fa-solid fa-chart-line fa-fw", "Academic Performance"],
     ["status", "fa-solid fa-circle-dot fa-fw", "Subject Status"],
@@ -74,7 +77,10 @@ const titles = {
   // Administrator Pages
   dashboard: "Dashboard",
   students: "Student Information",
+  facultyMembers: "Faculty Member",
   enrollment: "Enrollment",
+  adminSubjects: "Subjects",
+  adminSchedule: "Schedule",
   grades: "Grades",
   performance: "Academic Performance",
   status: "Subject Status",
@@ -123,6 +129,10 @@ function showPage(page) {
     } else {
       renderAll();
       if (page === "adminAnnouncements") renderAdminAnnouncements();
+      if (page === "facultyMembers") renderAdminFaculty();
+      if (page === "adminSubjects") renderAdminSubjects();
+      if (page === "adminSchedule") renderAdminSchedules();
+      if (page === "users") renderUsersTable();
     }
   } else {
     renderStudentPortal();

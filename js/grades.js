@@ -25,7 +25,7 @@ function updateGradeSectionOptions() {
       '<option value="Section C">Section C</option>'
     );
   } else if (isSHS) {
-    const strands = strand ? [strand] : ["STEM", "ABM", "HUMSS"];
+    const strands = strand ? [strand] : ["ABM", "HUMSS"];
     strands.forEach(st => {
       options.push(
         `<option value="${st}-A">${st}-A</option>`,
@@ -39,7 +39,7 @@ function updateGradeSectionOptions() {
       '<option value="Section B">Section B</option>',
       '<option value="Section C">Section C</option>'
     );
-    ["STEM", "ABM", "HUMSS"].forEach(st => {
+    ["ABM", "HUMSS"].forEach(st => {
       options.push(
         `<option value="${st}-A">${st}-A</option>`,
         `<option value="${st}-B">${st}-B</option>`,
@@ -90,7 +90,6 @@ function filterGradeStudents() {
     if (sec && s.section !== sec) return false;
     if (strand) {
       const enr = data.enrollments.find(e => e.student === s.id);
-      // Require an active enrollment record with a matching strand
       if (!enr || enr.strand !== strand) return false;
     }
     return true;
@@ -120,7 +119,7 @@ function renderGrades() {
     const finalScore = calc(g);
     return `<tr>
       <td><b>${esc(g[0])}</b></td>
-      ${[1, 2, 3, 4].map(j => `<td><input type="number" min="0" max="100" value="${g[j] ?? ''}" data-idx="${i}" data-q="${j}" class="grade-input"></td>`).join("")}
+      ${[1, 2, 3, 4].map(j => `<td><input type="number" min="0" max="100" id="grade_${esc(id)}_${i}_q${j}" name="grade_${esc(id)}_${i}_q${j}" aria-label="${esc(g[0])} Quarter ${j}" value="${g[j] ?? ''}" data-idx="${i}" data-q="${j}" class="grade-input"></td>`).join("")}
       <td><b>${finalScore}</b></td>
       <td>${badge(statusOf(finalScore))}</td>
     </tr>`;
@@ -131,7 +130,7 @@ function saveGrades() {
   const id = $("gradeStudent")?.value;
   if (!id) return;
   const arr = data.grades[id] || [];
-  document.querySelectorAll("[data-idx]").forEach(inp => {
+  document.querySelectorAll("#gradeTable [data-idx]").forEach(inp => {
     const i = Number(inp.dataset.idx);
     const q = Number(inp.dataset.q);
     const v = inp.value.trim();

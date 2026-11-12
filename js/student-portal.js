@@ -34,7 +34,7 @@ function renderStudentPortal() {
   if (!s) return;
   const grades = data.grades[s.id] || [];
   const enr = data.enrollments.find(e => e.student === s.id) || {
-    schoolYear: "2026-2027", grade: s.grade, strand: "STEM",
+    schoolYear: "2026-2027", grade: s.grade, strand: "ABM",
     section: s.section, date: "2026-06-15", enrollmentStatus: "Enrolled"
   };
 
@@ -80,52 +80,36 @@ function renderStudentPortal() {
 
   $("myGradeTable").innerHTML = grades.map(g => {
     const finalScore = calc(g);
-    return `<tr><td>${esc(g[0])}</td><td>${g[1] ?? ''}</td><td>${g[2] ?? ''}</td><td>${g[3] ?? ''}</td><td>${g[4] ?? ''}</td><td><b>${finalScore}</b></td><td>${badge(statusOf(finalScore))}</td></tr>`;
+    return `<tr><td>${esc(g[0])}</td><td>${formatQuarter(g[1])}</td><td>${formatQuarter(g[2])}</td><td>${formatQuarter(g[3])}</td><td>${formatQuarter(g[4])}</td><td><b>${finalScore}</b></td><td>${badge(statusOf(finalScore))}</td></tr>`;
   }).join("") || `<tr><td colspan="7">No grades recorded.</td></tr>`;
 
-  $("myPerformanceSummary").innerHTML = `<p><b>General Average:</b> ${avg}</p><p><b>Academic Standing:</b> ${Number(avg) >= 75 ? "Good Standing" : "Needs Remediation"}</p>`;
+  const hasCompleted = grades.some(g => typeof calc(g) === "number");
+  const standingText = !hasCompleted
+    ? "Pending (Incomplete Quarters)"
+    : (Number(avg) >= 75 ? "Good Standing" : "Needs Remediation");
+
+  $("myPerformanceSummary").innerHTML = `<p><b>General Average:</b> ${avg}</p><p><b>Academic Standing:</b> ${standingText}</p>`;
   
   $("myPerformanceChart").innerHTML = grades.map(g => {
     const sc = typeof calc(g) === "number" ? calc(g) : 0;
     return `<div class="bar" style="height:${Math.max(15, (sc - 60) * 3.5)}px"><span>${esc(g[0].slice(0, 5))}</span></div>`;
   }).join("");
 
-  // Presets mapping subjects to days, times, rooms, and assigned instructors
-  const schedulePresets = {
-    "Mathematics": { day: "Monday", time: "8:00 AM - 9:00 AM", room: "Room 301", instructor: "Prof. Maria Santos" },
-    "English": { day: "Tuesday", time: "9:00 AM - 10:00 AM", room: "Room 204", instructor: "Mr. Juan Reyes" },
-    "Science": { day: "Wednesday", time: "10:30 AM - 11:30 AM", room: "Science Lab", instructor: "Ms. Elena Cruz" },
-    "Filipino": { day: "Thursday", time: "1:00 PM - 2:00 PM", room: "Room 202", instructor: "Mr. Ricardo Dalisay" },
-    "History": { day: "Friday", time: "10:00 AM - 11:00 AM", room: "Room 205", instructor: "Prof. Maria Santos" },
-    "PE": { day: "Friday", time: "2:00 PM - 3:00 PM", room: "Gymnasium", instructor: "Coach Gabriel Perez" },
-    "ICT": { day: "Monday", time: "9:00 AM - 10:00 AM", room: "Computer Lab 1", instructor: "Prof. Maria Santos" },
-    "Research": { day: "Wednesday", time: "1:00 PM - 2:00 PM", room: "Computer Lab 2", instructor: "Prof. Maria Santos" }
-  };
+  // Pull schedules assigned by Admin for this student's class section or individual student ID
+  const studentSchedules = (data.schedules || []).filter(sch =>
+    (sch.targetType === "student" && sch.studentId === s.id) ||
+    (sch.targetType !== "student" && sch.grade === s.grade && sch.section === s.section)
+  );
 
-  const fallbackDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-  const fallbackTimes = ["8:00 AM - 9:00 AM", "9:00 AM - 10:00 AM", "10:30 AM - 11:30 AM", "1:00 PM - 2:00 PM", "2:00 PM - 3:00 PM"];
-  const fallbackRooms = ["Room 101", "Room 102", "Room 201", "Room 203", "Room 205"];
-  const fallbackInstructors = ["Prof. Maria Santos", "Mr. Juan Reyes", "Ms. Elena Cruz", "Mr. Ricardo Dalisay", "Coach Gabriel Perez"];
-
-  $("myScheduleTable").innerHTML = grades.map((g, i) => {
-    const subjectName = g[0];
-    const preset = schedulePresets[subjectName] || {
-      day: fallbackDays[i % fallbackDays.length],
-      time: fallbackTimes[i % fallbackTimes.length],
-      room: fallbackRooms[i % fallbackRooms.length],
-      instructor: fallbackInstructors[i % fallbackInstructors.length]
-    };
-
-    return `
-      <tr>
-        <td>${esc(subjectName)}</td>
-        <td>${esc(preset.day)}</td>
-        <td>${esc(preset.time)}</td>
-        <td><b>${esc(preset.room)}</b></td>
-        <td>${esc(preset.instructor)}</td>
-      </tr>
-    `;
-  }).join("") || `<tr><td colspan="5">No schedule available.</td></tr>`;
+  $("myScheduleTable").innerHTML = studentSchedules.map(sch => `
+    <tr>
+      <td><b>${esc(sch.subject)}</b></td>
+      <td>${esc(sch.day)}</td>
+      <td>${esc(sch.time)}</td>
+      <td><b>${esc(sch.room)}</b></td>
+      <td>${esc(sch.facultyName)}</td>
+    </tr>
+  `).join("") || `<tr><td colspan="5">No class schedule assigned yet.</td></tr>`;
 
   renderStudentAnnouncements();
 }

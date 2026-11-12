@@ -2,59 +2,60 @@
 // FACULTY & ANNOUNCEMENTS CONTROLLER
 // ==========================================================
 
-function initFacultyData() {
-  if (!data.faculty) {
-    data.faculty = {
-      id: "FAC-2026-01",
-      name: "Prof. Maria Santos",
-      email: "m.santos@salette.edu.ph",
-      department: "Senior High School - STEM & Academics",
-      contact: "0917-555-0199",
-      office: "Faculty Room 204, St. Joseph Hall",
-      classes: [
-        { id: "CLS-1", grade: "Grade 12", section: "STEM-A", subject: "Research", schedule: "Wed 1:00 PM - 2:00 PM", room: "Computer Lab 2" },
-        { id: "CLS-2", grade: "Grade 12", section: "STEM-A", subject: "ICT", schedule: "Mon 9:00 AM - 10:00 AM", room: "Computer Lab 1" },
-        { id: "CLS-3", grade: "Grade 11", section: "STEM-A", subject: "Mathematics", schedule: "Mon 8:00 AM - 9:00 AM", room: "Room 301" },
-        { id: "CLS-4", grade: "Grade 11", section: "HUMSS-A", subject: "History", schedule: "Fri 10:00 AM - 11:00 AM", room: "Room 205" }
-      ]
-    };
-  }
+function bindActiveFaculty(facId) {
+  const list = data.facultyList || [];
+  const found = list.find(f => f.id === facId) || list[0];
+  if (!found) return;
 
-  const roomDefaults = {
-    "CLS-1": "Computer Lab 2",
-    "CLS-2": "Computer Lab 1",
-    "CLS-3": "Room 301",
-    "CLS-4": "Room 205"
+  data.faculty = {
+    id: found.id,
+    name: found.name,
+    email: found.email || "faculty@salette.edu.ph",
+    department: found.department || "Academic Faculty",
+    contact: found.contact || "N/A",
+    office: found.office || "Faculty Room",
+    subjects: Array.isArray(found.subjects) ? [...found.subjects] : [],
+    classes: []
   };
-  if (Array.isArray(data.faculty.classes)) {
-    data.faculty.classes.forEach(c => {
-      if (!c.room) c.room = roomDefaults[c.id] || "Room 204";
-    });
-  }
+  syncFacultyClassesFromSchedules();
+}
+
+function syncFacultyClassesFromSchedules() {
+  if (!data.faculty) return;
+  const facSchedules = (data.schedules || []).filter(sch => sch.facultyId === data.faculty.id);
+
+  // Deduplicate by grade + section + subject so each handled class appears cleanly
+  const classMap = new Map();
+  facSchedules.forEach(sch => {
+    const key = `${sch.grade}|${sch.section}|${sch.subject}`;
+    if (!classMap.has(key)) {
+      classMap.set(key, {
+        id: sch.id,
+        grade: sch.grade,
+        section: sch.section,
+        subject: sch.subject,
+        schedule: `${sch.day} ${sch.time}`,
+        room: sch.room || "Room 204"
+      });
+    } else {
+      const existing = classMap.get(key);
+      existing.schedule += `, ${sch.day} ${sch.time}`;
+    }
+  });
+
+  data.faculty.classes = Array.from(classMap.values());
+}
+
+function initFacultyData() {
+  const activeId = currentUser?.id || data.faculty?.id || "FAC-2026-01";
+  bindActiveFaculty(activeId);
 
   if (!data.attendance) {
     data.attendance = {};
   }
 
   if (!data.announcements || !Array.isArray(data.announcements)) {
-    data.announcements = [
-      {
-        id: "ANN-001",
-        title: "2nd Quarter Examination Guidelines",
-        target: "All Classes",
-        author: "Prof. Maria Santos",
-        date: "2026-11-05",
-        content: "Please be reminded that the 2nd Quarter Examination schedules have been posted. Prepare all draft papers and research folios prior to Friday."
-      },
-      {
-        id: "ANN-002",
-        title: "STEM-A Research Consultation",
-        target: "Grade 12 - STEM-A",
-        author: "Prof. Maria Santos",
-        date: "2026-11-08",
-        content: "Research capstone draft consultations will take place this Wednesday at Computer Lab 2. Attendance is mandatory."
-      }
-    ];
+    data.announcements = defaultData.announcements;
   }
 }
 
@@ -118,7 +119,7 @@ function renderFacultyDashboard() {
         </div>
         <div class="fac-sched-title"><b>${esc(c.subject)}</b> &bull; ${esc(c.grade)} (${esc(c.section)})</div>
       </div>
-    `).join("");
+    `).join("") || `<p style="color:var(--text-muted);font-size:13px;">No class schedules assigned yet.</p>`;
   }
 
   const noticeEl = $("facultyRecentNotices");
@@ -169,7 +170,7 @@ function renderFacultyClasses() {
         </div>
       </div>
     `;
-  }).join("");
+  }).join("") || `<p style="color:var(--text-muted);">No classes assigned to your account yet.</p>`;
 }
 
 function openClassStudentList(classId) {
@@ -235,7 +236,11 @@ function renderFacultyGrades(highlightStudentId = null) {
   const classId = $("facGradeClassSelect")?.value;
   const cls = data.faculty.classes.find(c => c.id === classId);
   const tableBody = $("facGradesEntryTable");
-  if (!tableBody || !cls) return;
+  if (!tableBody) return;
+  if (!cls) {
+    tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:16px;">No assigned classes found.</td></tr>`;
+    return;
+  }
 
   const students = data.students.filter(s => s.grade === cls.grade && s.section === cls.section);
 
@@ -256,10 +261,10 @@ function renderFacultyGrades(highlightStudentId = null) {
       <tr style="${isTarget ? 'background-color:#fff3e0;' : ''}">
         <td style="text-align: center; color: var(--text-muted);">${idx + 1}</td>
         <td><b>${esc(s.name)}</b><br><small style="color:var(--text-muted);">${esc(s.id)}</small></td>
-        <td style="text-align: center;"><input type="number" min="0" max="100" class="grade-input fac-grade-q" data-sid="${s.id}" data-q="1" value="${subjectRow[1] ?? ''}"></td>
-        <td style="text-align: center;"><input type="number" min="0" max="100" class="grade-input fac-grade-q" data-sid="${s.id}" data-q="2" value="${subjectRow[2] ?? ''}"></td>
-        <td style="text-align: center;"><input type="number" min="0" max="100" class="grade-input fac-grade-q" data-sid="${s.id}" data-q="3" value="${subjectRow[3] ?? ''}"></td>
-        <td style="text-align: center;"><input type="number" min="0" max="100" class="grade-input fac-grade-q" data-sid="${s.id}" data-q="4" value="${subjectRow[4] ?? ''}"></td>
+        <td style="text-align: center;"><input type="number" min="0" max="100" id="facGrade_${esc(s.id)}_q1" name="facGrade_${esc(s.id)}_q1" aria-label="${esc(s.name)} Quarter 1" class="grade-input fac-grade-q" data-sid="${s.id}" data-q="1" value="${subjectRow[1] ?? ''}"></td>
+        <td style="text-align: center;"><input type="number" min="0" max="100" id="facGrade_${esc(s.id)}_q2" name="facGrade_${esc(s.id)}_q2" aria-label="${esc(s.name)} Quarter 2" class="grade-input fac-grade-q" data-sid="${s.id}" data-q="2" value="${subjectRow[2] ?? ''}"></td>
+        <td style="text-align: center;"><input type="number" min="0" max="100" id="facGrade_${esc(s.id)}_q3" name="facGrade_${esc(s.id)}_q3" aria-label="${esc(s.name)} Quarter 3" class="grade-input fac-grade-q" data-sid="${s.id}" data-q="3" value="${subjectRow[3] ?? ''}"></td>
+        <td style="text-align: center;"><input type="number" min="0" max="100" id="facGrade_${esc(s.id)}_q4" name="facGrade_${esc(s.id)}_q4" aria-label="${esc(s.name)} Quarter 4" class="grade-input fac-grade-q" data-sid="${s.id}" data-q="4" value="${subjectRow[4] ?? ''}"></td>
         <td style="text-align: center; font-weight: 800; font-size: 14px; color: var(--primary-dark);">${finalVal}</td>
         <td style="text-align: center;">${badge(statusOf(finalVal))}</td>
       </tr>
@@ -327,7 +332,11 @@ function renderFacultyAttendance() {
   const date = $("facAttDate")?.value || new Date().toISOString().slice(0, 10);
   const cls = data.faculty.classes.find(c => c.id === classId);
   const tableBody = $("facAttendanceDailyTable");
-  if (!tableBody || !cls) return;
+  if (!tableBody) return;
+  if (!cls) {
+    tableBody.innerHTML = `<tr><td colspan="4">No assigned classes found.</td></tr>`;
+    return;
+  }
 
   const students = data.students.filter(s => s.grade === cls.grade && s.section === cls.section);
   const attKey = `${date}_${cls.id}`;
@@ -442,6 +451,8 @@ function renderFacultyMonthlyAttendance() {
 function deleteAnnouncement(id) {
   data.announcements = (data.announcements || []).filter(a => a.id !== id);
   persist();
+  if (val("adminNoticeEditId") === id) resetAdminAnnouncementForm();
+  if (val("facNoticeEditId") === id) resetFacultyAnnouncementForm();
   renderFacultyAnnouncements();
   renderAdminAnnouncements();
   if (typeof renderAdminDashboardAnnouncements === "function") renderAdminDashboardAnnouncements();
@@ -450,20 +461,63 @@ function deleteAnnouncement(id) {
 
 const deleteFacultyAnnouncement = deleteAnnouncement;
 
+function resetFacultyAnnouncementForm() {
+  if ($("facNoticeEditId")) $("facNoticeEditId").value = "";
+  if ($("facNoticeFormTitle")) $("facNoticeFormTitle").textContent = "Post Class Announcement";
+  if ($("facNoticeTitle")) $("facNoticeTitle").value = "";
+  if ($("facNoticeContent")) $("facNoticeContent").value = "";
+  if ($("facNoticeTarget") && $("facNoticeTarget").options.length) {
+    $("facNoticeTarget").selectedIndex = 0;
+  }
+  if ($("facNoticeSaveBtn")) {
+    $("facNoticeSaveBtn").innerHTML = `<i class="fa-solid fa-paper-plane fa-fw"></i> Post Announcement`;
+  }
+  $("facNoticeCancelBtn")?.classList.add("hidden");
+}
+
+function editFacultyAnnouncement(id) {
+  const notice = (data.announcements || []).find(a => a.id === id);
+  if (!notice) return;
+
+  if ($("facNoticeEditId")) $("facNoticeEditId").value = notice.id;
+  if ($("facNoticeFormTitle")) $("facNoticeFormTitle").textContent = "Edit Class Announcement";
+  if ($("facNoticeTitle")) $("facNoticeTitle").value = notice.title;
+  if ($("facNoticeContent")) $("facNoticeContent").value = notice.content;
+
+  const targetSelect = $("facNoticeTarget");
+  if (targetSelect) {
+    const hasOption = Array.from(targetSelect.options).some(opt => opt.value === notice.target);
+    if (!hasOption && notice.target) {
+      const opt = document.createElement("option");
+      opt.value = notice.target;
+      opt.textContent = notice.target;
+      targetSelect.appendChild(opt);
+    }
+    targetSelect.value = notice.target;
+  }
+
+  if ($("facNoticeSaveBtn")) {
+    $("facNoticeSaveBtn").innerHTML = `<i class="fa-solid fa-floppy-disk fa-fw"></i> Update Announcement`;
+  }
+  $("facNoticeCancelBtn")?.classList.remove("hidden");
+  $("facultyAnnouncements")?.scrollIntoView({ behavior: "smooth" });
+}
+
 function renderFacultyAnnouncements() {
   const listEl = $("facAnnouncementList");
   if (!listEl) return;
 
   listEl.innerHTML = (data.announcements || []).map(a => `
-    <div class="fac-notice-item">
+    <div class="fac-notice-item" draggable="false">
       <div class="fac-notice-header">
         <div>
           <h4 style="margin: 0; font-size: 16px; color: var(--primary-dark);">${esc(a.title)}</h4>
           <small style="color:var(--text-muted);"><i class="fa-solid fa-bullhorn"></i> Posted by ${esc(a.author)} &bull; ${esc(a.date)}</small>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;">
+        <div style="display:flex;align-items:center;gap:6px;">
           <span class="badge enrolled">${esc(a.target)}</span>
-          <button class="secondary table-btn" style="color:var(--primary);" onclick="deleteAnnouncement('${a.id}')"><i class="fa-solid fa-trash"></i></button>
+          <button class="secondary table-btn" title="Edit Announcement" onclick="editFacultyAnnouncement('${esc(a.id)}')"><i class="fa-solid fa-pen-to-square"></i></button>
+          <button class="secondary table-btn" title="Delete Announcement" style="color:var(--primary);" onclick="deleteAnnouncement('${esc(a.id)}')"><i class="fa-solid fa-trash"></i></button>
         </div>
       </div>
       <p style="margin: 10px 0 0 0; font-size: 13.5px; line-height: 1.6; color: var(--text-main);">${esc(a.content)}</p>
@@ -472,17 +526,42 @@ function renderFacultyAnnouncements() {
 
   const targetSelect = $("facNoticeTarget");
   if (targetSelect) {
+    const currentTarget = targetSelect.value;
     targetSelect.innerHTML = `<option value="All Classes">All My Classes</option>` +
-      data.faculty.classes.map(c => `<option value="${c.grade} - ${c.section}">${c.grade} - ${c.section} (${c.subject})</option>`).join("");
+      data.faculty.classes.map(c => `<option value="${esc(c.grade)} - ${esc(c.section)}">${esc(c.grade)} - ${esc(c.section)} (${esc(c.subject)})</option>`).join("");
+    if (currentTarget && Array.from(targetSelect.options).some(o => o.value === currentTarget)) {
+      targetSelect.value = currentTarget;
+    }
   }
 }
 
 function postFacultyAnnouncement() {
+  const editId = val("facNoticeEditId");
   const title = val("facNoticeTitle");
   const target = val("facNoticeTarget") || "All Classes";
   const content = val("facNoticeContent");
 
   if (!title || !content) return toast("Notice title and content are required.");
+
+  if (!data.announcements) data.announcements = [];
+
+  if (editId) {
+    const idx = data.announcements.findIndex(a => a.id === editId);
+    if (idx !== -1) {
+      data.announcements[idx] = {
+        ...data.announcements[idx],
+        title,
+        target,
+        content
+      };
+    }
+    persist();
+    resetFacultyAnnouncementForm();
+    renderFacultyAnnouncements();
+    if (typeof renderAdminDashboardAnnouncements === "function") renderAdminDashboardAnnouncements();
+    toast("Announcement updated successfully.");
+    return;
+  }
 
   const newNotice = {
     id: `ANN-${Date.now().toString().slice(-4)}`,
@@ -493,30 +572,71 @@ function postFacultyAnnouncement() {
     content
   };
 
-  if (!data.announcements) data.announcements = [];
   data.announcements.unshift(newNotice);
   persist();
 
-  $("facNoticeTitle").value = "";
-  $("facNoticeContent").value = "";
+  resetFacultyAnnouncementForm();
   renderFacultyAnnouncements();
   if (typeof renderAdminDashboardAnnouncements === "function") renderAdminDashboardAnnouncements();
   toast("Announcement posted successfully.");
+}
+
+function resetAdminAnnouncementForm() {
+  if ($("adminNoticeEditId")) $("adminNoticeEditId").value = "";
+  if ($("adminNoticeFormTitle")) $("adminNoticeFormTitle").textContent = "Post Announcement";
+  if ($("adminNoticeTitle")) $("adminNoticeTitle").value = "";
+  if ($("adminNoticeContent")) $("adminNoticeContent").value = "";
+  if ($("adminNoticeTarget") && $("adminNoticeTarget").options.length) {
+    $("adminNoticeTarget").selectedIndex = 0;
+  }
+  if ($("adminNoticeSaveBtn")) {
+    $("adminNoticeSaveBtn").innerHTML = `<i class="fa-solid fa-paper-plane fa-fw"></i> Post Announcement`;
+  }
+  $("adminNoticeCancelBtn")?.classList.add("hidden");
+}
+
+function editAdminAnnouncement(id) {
+  const notice = (data.announcements || []).find(a => a.id === id);
+  if (!notice) return;
+
+  if ($("adminNoticeEditId")) $("adminNoticeEditId").value = notice.id;
+  if ($("adminNoticeFormTitle")) $("adminNoticeFormTitle").textContent = "Edit Announcement";
+  if ($("adminNoticeTitle")) $("adminNoticeTitle").value = notice.title;
+  if ($("adminNoticeContent")) $("adminNoticeContent").value = notice.content;
+
+  const targetSelect = $("adminNoticeTarget");
+  if (targetSelect) {
+    const hasOption = Array.from(targetSelect.options).some(opt => opt.value === notice.target);
+    if (!hasOption && notice.target) {
+      const opt = document.createElement("option");
+      opt.value = notice.target;
+      opt.textContent = notice.target;
+      targetSelect.appendChild(opt);
+    }
+    targetSelect.value = notice.target;
+  }
+
+  if ($("adminNoticeSaveBtn")) {
+    $("adminNoticeSaveBtn").innerHTML = `<i class="fa-solid fa-floppy-disk fa-fw"></i> Update Announcement`;
+  }
+  $("adminNoticeCancelBtn")?.classList.remove("hidden");
+  $("adminAnnouncements")?.scrollIntoView({ behavior: "smooth" });
 }
 
 function renderAdminAnnouncements() {
   const listEl = $("adminAnnouncementList");
   if (listEl) {
     listEl.innerHTML = (data.announcements || []).map(a => `
-      <div class="fac-notice-item">
+      <div class="fac-notice-item" draggable="false">
         <div class="fac-notice-header">
           <div>
             <h4 style="margin: 0; font-size: 16px; color: var(--primary-dark);">${esc(a.title)}</h4>
             <small style="color:var(--text-muted);"><i class="fa-solid fa-bullhorn"></i> Posted by ${esc(a.author)} &bull; ${esc(a.date)}</small>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;">
+          <div style="display:flex;align-items:center;gap:6px;">
             <span class="badge enrolled">${esc(a.target)}</span>
-            <button class="secondary table-btn" style="color:var(--primary);" onclick="deleteAnnouncement('${a.id}')"><i class="fa-solid fa-trash"></i></button>
+            <button class="secondary table-btn" title="Edit Announcement" onclick="editAdminAnnouncement('${esc(a.id)}')"><i class="fa-solid fa-pen-to-square"></i></button>
+            <button class="secondary table-btn" title="Delete Announcement" style="color:var(--primary);" onclick="deleteAnnouncement('${esc(a.id)}')"><i class="fa-solid fa-trash"></i></button>
           </div>
         </div>
         <p style="margin: 10px 0 0 0; font-size: 13.5px; line-height: 1.6; color: var(--text-main);">${esc(a.content)}</p>
@@ -526,18 +646,43 @@ function renderAdminAnnouncements() {
 
   const targetSelect = $("adminNoticeTarget");
   if (targetSelect) {
+    const currentTarget = targetSelect.value;
     const classSet = new Set(data.students.map(s => `${s.grade} - ${s.section}`).filter(Boolean));
     targetSelect.innerHTML = `<option value="All Classes">All Classes</option>` +
       Array.from(classSet).map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+    if (currentTarget && Array.from(targetSelect.options).some(o => o.value === currentTarget)) {
+      targetSelect.value = currentTarget;
+    }
   }
 }
 
 function postAdminAnnouncement() {
+  const editId = val("adminNoticeEditId");
   const title = val("adminNoticeTitle");
   const target = val("adminNoticeTarget") || "All Classes";
   const content = val("adminNoticeContent");
 
   if (!title || !content) return toast("Notice title and content are required.");
+
+  if (!data.announcements) data.announcements = [];
+
+  if (editId) {
+    const idx = data.announcements.findIndex(a => a.id === editId);
+    if (idx !== -1) {
+      data.announcements[idx] = {
+        ...data.announcements[idx],
+        title,
+        target,
+        content
+      };
+    }
+    persist();
+    resetAdminAnnouncementForm();
+    renderAdminAnnouncements();
+    if (typeof renderAdminDashboardAnnouncements === "function") renderAdminDashboardAnnouncements();
+    toast("Announcement updated successfully.");
+    return;
+  }
 
   const newNotice = {
     id: `ANN-${Date.now().toString().slice(-4)}`,
@@ -548,12 +693,10 @@ function postAdminAnnouncement() {
     content
   };
 
-  if (!data.announcements) data.announcements = [];
   data.announcements.unshift(newNotice);
   persist();
 
-  $("adminNoticeTitle").value = "";
-  $("adminNoticeContent").value = "";
+  resetAdminAnnouncementForm();
   renderAdminAnnouncements();
   if (typeof renderAdminDashboardAnnouncements === "function") renderAdminDashboardAnnouncements();
   toast("Announcement posted successfully.");
@@ -590,7 +733,7 @@ function renderFacultyReports() {
 function generateFacultyReportHTML(title) {
   const fac = data.faculty;
   const selectedClassId = $("facGradeClassSelect")?.value || $("facAttClassSelect")?.value || (fac.classes[0] && fac.classes[0].id);
-  const primaryClass = fac.classes.find(c => c.id === selectedClassId) || fac.classes[0] || { id: "CLS-1", grade: "Grade 12", section: "STEM-A", subject: "Research", room: "Computer Lab 2" };
+  const primaryClass = fac.classes.find(c => c.id === selectedClassId) || fac.classes[0] || { id: "CLS-1", grade: "Grade 12", section: "ABM-A", subject: "Research 2", room: "Computer Lab 2" };
   const students = data.students.filter(s => s.grade === primaryClass.grade && s.section === primaryClass.section);
 
   let tableHeaderHTML = "";
@@ -718,10 +861,10 @@ function generateFacultyReportHTML(title) {
           <td style="padding:8px;color:#888;">${idx + 1}</td>
           <td style="padding:8px;"><b>${esc(s.name)}</b></td>
           <td style="padding:8px;text-align:center;">${esc(s.id)}</td>
-          <td style="padding:8px;text-align:center;">${gr[1] ?? '—'}</td>
-          <td style="padding:8px;text-align:center;">${gr[2] ?? '—'}</td>
-          <td style="padding:8px;text-align:center;">${gr[3] ?? '—'}</td>
-          <td style="padding:8px;text-align:center;">${gr[4] ?? '—'}</td>
+          <td style="padding:8px;text-align:center;">${formatQuarter(gr[1])}</td>
+          <td style="padding:8px;text-align:center;">${formatQuarter(gr[2])}</td>
+          <td style="padding:8px;text-align:center;">${formatQuarter(gr[3])}</td>
+          <td style="padding:8px;text-align:center;">${formatQuarter(gr[4])}</td>
           <td style="padding:8px;text-align:center;font-weight:700;">${finalVal}</td>
           <td style="padding:8px;text-align:center;">${statusOf(finalVal)}</td>
         </tr>
@@ -797,11 +940,27 @@ function renderFacultyProfile() {
 
   const classesList = $("facultyHandledClassesList");
   if (classesList) {
-    classesList.innerHTML = fac.classes.map(c => `
-      <div class="modal-pill" style="padding: 8px 12px; margin-bottom: 6px;">
-        <i class="fa-solid fa-chalkboard-user" style="color:var(--primary)"></i> <b>${esc(c.subject)}</b> &bull; ${esc(c.grade)} (${esc(c.section)}) &bull; <small>${esc(c.schedule)}</small> &bull; <small><i class="fa-solid fa-location-dot"></i> <b>${esc(c.room || "Room 204")}</b></small>
-      </div>
-    `).join("");
+    const assignedSubjectsHTML = (fac.subjects || []).length
+      ? `<div style="margin-bottom:12px;">
+          <small style="display:block;color:var(--text-muted);font-weight:700;margin-bottom:6px;">ASSIGNED SUBJECTS (${fac.subjects.length})</small>
+          <div class="modal-pills" style="margin-top:0;">
+            ${fac.subjects.map(sub => `<span class="modal-pill"><i class="fa-solid fa-book fa-fw" style="color:var(--primary)"></i> ${esc(sub)}</span>`).join("")}
+          </div>
+        </div>`
+      : "";
+
+    const scheduledClassesHTML = fac.classes.length
+      ? `<div>
+          <small style="display:block;color:var(--text-muted);font-weight:700;margin-bottom:6px;">SCHEDULED CLASS SECTIONS (${fac.classes.length})</small>
+          ${fac.classes.map(c => `
+            <div class="modal-pill" style="padding: 8px 12px; margin-bottom: 6px; display: block;">
+              <i class="fa-solid fa-chalkboard-user" style="color:var(--primary)"></i> <b>${esc(c.subject)}</b> &bull; ${esc(c.grade)} (${esc(c.section)}) &bull; <small>${esc(c.schedule)}</small> &bull; <small><i class="fa-solid fa-location-dot"></i> <b>${esc(c.room || "Room 204")}</b></small>
+            </div>
+          `).join("")}
+        </div>`
+      : `<p style="color:var(--text-muted);font-size:13px;">No classes scheduled yet.</p>`;
+
+    classesList.innerHTML = assignedSubjectsHTML + scheduledClassesHTML;
   }
 
   $("facProfileEmail").value = fac.email;
@@ -819,6 +978,13 @@ function saveFacultyProfileSettings() {
   data.faculty.email = email;
   data.faculty.contact = contact;
   data.faculty.office = office;
+
+  const idx = (data.facultyList || []).findIndex(f => f.id === data.faculty.id);
+  if (idx !== -1) {
+    data.facultyList[idx].email = email;
+    data.facultyList[idx].contact = contact;
+    data.facultyList[idx].office = office;
+  }
 
   persist();
   renderFacultyProfile();

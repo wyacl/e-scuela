@@ -62,16 +62,20 @@
           <!-- Credentials Form -->
           <div class="field">
             <label for="username" id="usernameLabel">Username</label>
-            <input id="username" type="text" placeholder="Enter username" autocomplete="username">
+            <input id="username" name="username" type="text" placeholder="Enter username" autocomplete="username">
           </div>
 
           <div class="field">
             <label for="password">Password</label>
-            <input id="password" type="password" placeholder="Enter password" autocomplete="current-password">
+            <input id="password" name="password" type="password" placeholder="Enter password" autocomplete="current-password">
           </div>
 
           <button class="primary login-button" onclick="login()">Login</button>
           <div id="loginError" class="error"></div>
+
+          <div class="login-helper">
+            <button type="button" class="find-account-link" onclick="openFindAccountModal()">Find your account</button>
+          </div>
 
         </div>
       </div>
@@ -134,17 +138,17 @@
           </div>
         </div>
 
-      <!-- Admin Announcements Feed -->
-      <div class="panel" style="margin-top: 18px;">
-        <div class="section-head">
-          <h3><i class="fa-solid fa-bullhorn" style="color:var(--primary);margin-right:8px;"></i>Faculty Announcements &amp; Notices</h3>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span class="badge enrolled" id="adminNoticeCount">0 Active</span>
-            <button class="secondary table-btn" onclick="showPage('adminAnnouncements')">Manage All</button>
+        <!-- Admin Announcements Feed -->
+        <div class="panel" style="margin-top: 18px;">
+          <div class="section-head">
+            <h3><i class="fa-solid fa-bullhorn" style="color:var(--primary);margin-right:8px;"></i>Faculty Announcements &amp; Notices</h3>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="badge enrolled" id="adminNoticeCount">0 Active</span>
+              <button class="secondary table-btn" onclick="showPage('adminAnnouncements')">Manage All</button>
+            </div>
           </div>
+          <div id="adminAnnouncementsList"></div>
         </div>
-        <div id="adminAnnouncementsList"></div>
-      </div>
       </section>
 
       <!-- 2. STUDENT INFORMATION -->
@@ -156,8 +160,8 @@
           </div>
           
           <div class="filters">
-            <input id="studentSearch" placeholder="Search name or ID..." oninput="renderStudents()">
-            <select id="studentGrade" onchange="renderStudents()"></select>
+            <input id="studentSearch" name="studentSearch" aria-label="Search student name or ID" placeholder="Search name or ID..." oninput="renderStudents()">
+            <select id="studentGrade" name="studentGrade" aria-label="Filter students by grade level" onchange="renderStudents()"></select>
           </div>
 
           <div class="table-wrap">
@@ -177,44 +181,297 @@
         </div>
 
         <div id="studentForm" class="panel hidden">
-          <h3>Add Student</h3>
+          <h3 id="studentFormTitle">Add Student</h3>
+          <input type="hidden" id="fEditId" name="fEditId" value="">
           <div class="form-grid">
             <div class="field">
               <label for="fId">Student ID Number (Login Username)</label>
-              <input id="fId" placeholder="0000-000">
+              <input id="fId" name="fId" placeholder="0000-000">
             </div>
             <div class="field">
               <label for="fGrade">Grade</label>
-              <select id="fGrade"></select>
+              <select id="fGrade" name="fGrade"></select>
             </div>
             <div class="field">
               <label for="fLastName">Last Name</label>
-              <input id="fLastName" placeholder="e.g. Dela Cruz">
+              <input id="fLastName" name="fLastName" placeholder="e.g. Dela Cruz">
             </div>
             <div class="field">
               <label for="fFirstName">First Name</label>
-              <input id="fFirstName" placeholder="e.g. Juan">
+              <input id="fFirstName" name="fFirstName" placeholder="e.g. Juan">
             </div>
             <div class="field">
               <label for="fMiddleName">Middle Name</label>
-              <input id="fMiddleName" placeholder="e.g. Santos (optional)">
+              <input id="fMiddleName" name="fMiddleName" placeholder="e.g. Santos (optional)">
             </div>
             <div class="field">
               <label for="fSuffix">Suffix</label>
-              <input id="fSuffix" placeholder="e.g. Jr., III (optional)">
+              <input id="fSuffix" name="fSuffix" placeholder="e.g. Jr., III (optional)">
             </div>
             <div class="field">
               <label for="fContact">Contact Number</label>
-              <input id="fContact" placeholder="e.g. 09123456789">
+              <input id="fContact" name="fContact" placeholder="e.g. 09123456789">
             </div>
             <div class="field">
               <label for="fGuardian">Guardian</label>
-              <input id="fGuardian" placeholder="Parent / Guardian Name">
+              <input id="fGuardian" name="fGuardian" placeholder="Parent / Guardian Name">
             </div>
           </div>
           <div class="actions">
-            <button class="primary" onclick="saveStudent()">Save Student</button>
+            <button class="primary" id="studentSaveBtn" onclick="saveStudent()">Save Student</button>
             <button class="secondary" onclick="closeStudentForm()">Cancel</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2.5. FACULTY MEMBER MANAGEMENT (ADMIN) -->
+      <section id="facultyMembers" class="page hidden">
+        <div class="panel">
+          <div class="section-head">
+            <h3 id="facFormTitle">Add Faculty Member</h3>
+            <small style="color:var(--text-muted);">Register faculty members and assign their handled subjects</small>
+          </div>
+
+          <input type="hidden" id="facEditId" name="facEditId" value="">
+          <div class="form-grid">
+            <div class="field">
+              <label for="facIdInput">Faculty Employee ID</label>
+              <input id="facIdInput" name="facIdInput" placeholder="e.g. FAC-2026-04">
+            </div>
+            <div class="field">
+              <label for="facNameInput">Full Name</label>
+              <input id="facNameInput" name="facNameInput" placeholder="e.g. Mr. Ricardo Dalisay">
+            </div>
+            <div class="field">
+              <label for="facUsernameInput">Login Username</label>
+              <input id="facUsernameInput" name="facUsernameInput" placeholder="e.g. ricardo.dalisay">
+            </div>
+            <div class="field">
+              <label for="facPasswordInput">Login Password</label>
+              <input id="facPasswordInput" name="facPasswordInput" placeholder="e.g. dalisay123">
+            </div>
+            <div class="field">
+              <label for="facDeptInput">Academic Department</label>
+              <input id="facDeptInput" name="facDeptInput" placeholder="e.g. Junior High School / Senior High School">
+            </div>
+            <div class="field">
+              <label for="facEmailInput">Email Address</label>
+              <input id="facEmailInput" name="facEmailInput" type="email" placeholder="e.g. r.dalisay@salette.edu.ph">
+            </div>
+            <div class="field">
+              <label for="facContactInput">Contact Number</label>
+              <input id="facContactInput" name="facContactInput" placeholder="e.g. 0917-555-0123">
+            </div>
+            <div class="field">
+              <label for="facOfficeInput">Faculty Room / Office</label>
+              <input id="facOfficeInput" name="facOfficeInput" placeholder="e.g. Faculty Room 201">
+            </div>
+            <div class="field hidden" id="facStatusField">
+              <label for="facStatusInput">Account Status</label>
+              <select id="facStatusInput" name="facStatusInput">
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+
+            <div class="field span-2">
+              <div class="field-group-label" style="font-weight:700;margin-bottom:8px;">Assigned Subjects (Check subjects handled by this faculty member)</div>
+              <div id="facSubjectsCheckboxes" class="subject-checkbox-grid"></div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="primary" id="facSaveBtn" onclick="saveAdminFaculty()"><i class="fa-solid fa-user-plus fa-fw"></i> Save Faculty Member</button>
+            <button class="secondary hidden" id="facCancelEditBtn" onclick="resetAdminFacultyForm()">Cancel Edit</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="section-head">
+            <h3>Faculty Directory</h3>
+            <span class="badge enrolled" id="adminFacultyCount">0 Active</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Faculty ID</th>
+                  <th>Full Name</th>
+                  <th>Username</th>
+                  <th>Department</th>
+                  <th>Assigned Subjects</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="adminFacultyTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2.6. SUBJECTS MANAGEMENT (ADMIN) -->
+      <section id="adminSubjects" class="page hidden">
+        <div class="panel">
+          <div class="section-head">
+            <h3 id="subFormTitle">Add Subject &amp; Grade Assignment</h3>
+            <small style="color:var(--text-muted);">Create subjects and assign them to specific grade levels and strands</small>
+          </div>
+
+          <input type="hidden" id="subEditId" name="subEditId" value="">
+          <div class="form-grid">
+            <div class="field span-2">
+              <label for="subNameInput">Subject Name</label>
+              <input id="subNameInput" name="subNameInput" placeholder="e.g. Makabansa, Business Finance, Creative Writing">
+            </div>
+
+            <div class="field span-2">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+                <div class="field-group-label" style="margin:0;font-weight:700;">Assign to Grade Levels</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  <button type="button" class="secondary table-btn" onclick="selectSubjectGradePreset('all')">All Grades</button>
+                  <button type="button" class="secondary table-btn" onclick="selectSubjectGradePreset('elem13')">Grades 1–3</button>
+                  <button type="button" class="secondary table-btn" onclick="selectSubjectGradePreset('elem46')">Grades 4–6</button>
+                  <button type="button" class="secondary table-btn" onclick="selectSubjectGradePreset('jhs')">Grades 7–10</button>
+                  <button type="button" class="secondary table-btn" onclick="selectSubjectGradePreset('shs')">Grades 11–12</button>
+                  <button type="button" class="secondary table-btn" onclick="selectSubjectGradePreset('none')">Clear</button>
+                </div>
+              </div>
+              <div id="subGradeCheckboxes" class="subject-checkbox-grid"></div>
+            </div>
+
+            <div class="field span-2" id="subStrandGroup">
+              <div class="field-group-label" style="font-weight:700;margin-bottom:8px;">Assign to Strand (For Grade 11 &amp; 12 — select both for Core subjects)</div>
+              <div id="subStrandCheckboxes" class="subject-checkbox-grid"></div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="primary" id="subSaveBtn" onclick="saveAdminSubject()"><i class="fa-solid fa-plus fa-fw"></i> Save Subject</button>
+            <button class="secondary hidden" id="subCancelEditBtn" onclick="resetAdminSubjectForm()">Cancel Edit</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="section-head">
+            <h3>Curriculum Subjects</h3>
+            <span class="badge enrolled" id="adminSubjectsCount">0 Subjects</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Subject Name</th>
+                  <th>Assigned Grade Levels</th>
+                  <th>Assigned Strand (SHS)</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="adminSubjectsTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2.7. CLASS SCHEDULE MANAGEMENT (ADMIN) -->
+      <section id="adminSchedule" class="page hidden">
+        <div class="panel">
+          <div class="section-head">
+            <h3>Add Class Schedule</h3>
+            <small style="color:var(--text-muted);">Assign class schedules for faculty members and students</small>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="schFaculty">Faculty Member</label>
+              <select id="schFaculty" name="schFaculty" onchange="onScheduleFacultyChange()"></select>
+            </div>
+            <div class="field">
+              <label for="schSubject">Subject</label>
+              <select id="schSubject" name="schSubject"></select>
+            </div>
+            <div class="field">
+              <label for="schTargetType">Schedule Assignment Scope</label>
+              <select id="schTargetType" name="schTargetType" onchange="onScheduleTargetTypeChange()">
+                <option value="section">Class Section (All Students in Section)</option>
+                <option value="student">Individual Student</option>
+              </select>
+            </div>
+            <div class="field hidden" id="schStudentField">
+              <label for="schStudent">Select Student</label>
+              <select id="schStudent" name="schStudent" onchange="onScheduleStudentChange()"></select>
+            </div>
+            <div class="field">
+              <label for="schGrade">Grade Level</label>
+              <select id="schGrade" name="schGrade" onchange="updateScheduleSectionFields()"></select>
+            </div>
+            <div class="field" id="schStrandField">
+              <label for="schStrand">Strand / Course</label>
+              <select id="schStrand" name="schStrand" onchange="updateScheduleSectionFields()">
+                <option value="ABM">ABM</option>
+                <option value="HUMSS">HUMSS</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="schSection">Section</label>
+              <select id="schSection" name="schSection"></select>
+            </div>
+            <div class="field">
+              <label for="schDay">Day(s)</label>
+              <select id="schDay" name="schDay">
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+                <option value="Mon / Wed / Fri">Mon / Wed / Fri</option>
+                <option value="Tue / Thu">Tue / Thu</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="schTime">Time Slot</label>
+              <input id="schTime" name="schTime" placeholder="e.g. 8:00 AM - 9:00 AM">
+            </div>
+            <div class="field">
+              <label for="schRoom">Room / Venue</label>
+              <input id="schRoom" name="schRoom" placeholder="e.g. Room 301 / Computer Lab 1">
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="primary" onclick="saveAdminSchedule()"><i class="fa-solid fa-calendar-plus fa-fw"></i> Add Schedule</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="section-head">
+            <h3>Active Class Schedules</h3>
+            <div class="filters" style="margin:0;">
+              <select id="schFilterFaculty" name="schFilterFaculty" aria-label="Filter schedules by faculty member" onchange="renderAdminSchedules()">
+                <option value="">All Faculty Members</option>
+              </select>
+              <select id="schFilterGrade" name="schFilterGrade" aria-label="Filter schedules by grade level" onchange="renderAdminSchedules()">
+                <option value="">All Grade Levels</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Faculty Member</th>
+                  <th>Subject</th>
+                  <th>Class / Student</th>
+                  <th>Day</th>
+                  <th>Time</th>
+                  <th>Room</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="adminScheduleTable"></tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -229,35 +486,34 @@
           <div class="form-grid">
             <div class="field">
               <label for="eStudent">Student</label>
-              <select id="eStudent"></select>
+              <select id="eStudent" name="eStudent"></select>
             </div>
             <div class="field">
               <label for="eSY">School Year</label>
-              <input id="eSY" value="2026-2027">
+              <input id="eSY" name="eSY" value="2026-2027">
             </div>
             <div class="field">
               <label for="eGrade">Grade Level (Auto-synced)</label>
-              <input id="eGrade" readonly style="background:#f8fafc;cursor:not-allowed;">
+              <input id="eGrade" name="eGrade" readonly style="background:#f8fafc;cursor:not-allowed;">
             </div>
             <div class="field">
               <label for="eStrand">Strand / Course</label>
-              <select id="eStrand">
-                <option value="STEM" selected>STEM</option>
-                <option value="ABM">ABM</option>
+              <select id="eStrand" name="eStrand">
+                <option value="ABM" selected>ABM</option>
                 <option value="HUMSS">HUMSS</option>
               </select>
             </div>
             <div class="field">
               <label for="eSection">Section</label>
-              <select id="eSection"></select>
+              <select id="eSection" name="eSection"></select>
             </div>
             <div class="field date-field-container" style="cursor: not-allowed;">
               <label for="eDate">Enrollment Date</label>
-              <input id="eDate" type="date" readonly tabindex="-1" style="background:#f8fafc;cursor:not-allowed;pointer-events:none;">
+              <input id="eDate" name="eDate" type="date" readonly tabindex="-1" style="background:#f8fafc;cursor:not-allowed;pointer-events:none;">
             </div>
             <div class="field">
               <label for="eEnrollmentStatus">Enrollment Status</label>
-              <select id="eEnrollmentStatus">
+              <select id="eEnrollmentStatus" name="eEnrollmentStatus">
                 <option value="Enrolled">Enrolled</option>
                 <option value="Pending">Pending</option>
                 <option value="Dropped">Dropped</option>
@@ -265,7 +521,7 @@
             </div>
 
             <div class="field span-2">
-              <label style="font-weight:700;margin-bottom:10px;">Subjects to Take (Check subjects to enroll)</label>
+              <div class="field-group-label" style="font-weight:700;margin-bottom:10px;">Subjects to Take (Assigned to student's grade level &amp; strand)</div>
               <div id="enrollmentSubjects" class="subject-checkbox-grid"></div>
             </div>
           </div>
@@ -303,21 +559,20 @@
             <h3>Grades Management</h3>
 
             <div class="grades-filter-bar">
-              <select id="gradeFilterYear" onchange="handleGradeYearChange()">
+              <select id="gradeFilterYear" name="gradeFilterYear" aria-label="Filter grades by year level" onchange="handleGradeYearChange()">
                 <option value="">All Year Levels</option>
               </select>
-              <select id="gradeFilterStrand" onchange="handleGradeStrandChange()">
+              <select id="gradeFilterStrand" name="gradeFilterStrand" aria-label="Filter grades by strand" onchange="handleGradeStrandChange()">
                 <option value="">All Strands</option>
-                <option value="STEM">STEM</option>
                 <option value="ABM">ABM</option>
                 <option value="HUMSS">HUMSS</option>
               </select>
-              <select id="gradeFilterSection" onchange="filterGradeStudents()">
+              <select id="gradeFilterSection" name="gradeFilterSection" aria-label="Filter grades by section" onchange="filterGradeStudents()">
                 <option value="">All Sections</option>
               </select>
             </div>
 
-            <select id="gradeStudent" onchange="renderGrades()"></select>
+            <select id="gradeStudent" name="gradeStudent" aria-label="Select student for grades" onchange="renderGrades()"></select>
           </div>
 
           <div class="table-wrap">
@@ -344,23 +599,40 @@
         </div>
       </section>
 
-      <!-- 5. ACADEMIC PERFORMANCE (LIST FORMAT + SUMMARY & CHART) -->
+      <!-- 5. ACADEMIC PERFORMANCE (FILTERED BY GRADE LEVEL & SHS STRAND) -->
       <section id="performance" class="page hidden">
         <div class="panel">
           <div class="section-head">
-            <h3>Top 1–3 Academic Honors</h3>
-            <span class="badge regular">Overall General Averages</span>
+            <h3 id="perfSectionTitle">Top 1–3 Academic Performers</h3>
+            <div class="filters" style="margin:0;">
+              <select id="perfGradeFilter" name="perfGradeFilter" aria-label="Filter academic performance by grade level" onchange="handlePerfGradeChange()">
+                <option value="">All Grade Levels</option>
+              </select>
+              <select id="perfStrandFilter" name="perfStrandFilter" aria-label="Filter academic performance by strand" onchange="renderPerformance()" style="display:none;">
+                <option value="">All Strands</option>
+                <option value="ABM">ABM</option>
+                <option value="HUMSS">HUMSS</option>
+              </select>
+            </div>
           </div>
-          <div id="topPerformersList" class="honors-list"></div>
+          <div id="topPerformersByGrade" class="perf-groups-container"></div>
+        </div>
+
+        <div class="panel" id="perfStrandPanel">
+          <div class="section-head">
+            <h3>Top 1–3 Academic Performers by Strand (SHS)</h3>
+            <span class="badge gold" id="perfStrandBadge">Grade 11 &amp; 12 Strands</span>
+          </div>
+          <div id="topPerformersByStrand" class="perf-groups-container"></div>
         </div>
 
         <div class="grid2">
           <div class="panel">
-            <h3>Academic Summary</h3>
+            <h3 id="perfSummaryTitle">Academic Summary</h3>
             <div id="performanceSummary"></div>
           </div>
           <div class="panel">
-            <h3>Performance by Subject</h3>
+            <h3 id="perfChartTitle">Performance by Subject</h3>
             <div id="performanceChart" class="chart"></div>
           </div>
         </div>
@@ -372,12 +644,16 @@
           <div class="section-head">
             <h3>Subject Status</h3>
             <div class="filters">
-              <select id="statusFilter" onchange="renderStatus()">
+              <select id="statusYear" name="statusYear" aria-label="Filter subject status by year level" onchange="renderStatus()">
+                <option value="">All Year Levels</option>
+              </select>
+              <select id="statusFilter" name="statusFilter" aria-label="Filter subject status by result" onchange="renderStatus()">
                 <option value="">All Status</option>
                 <option>Passed</option>
                 <option>Failed</option>
+                <option>Pending</option>
               </select>
-              <select id="statusSubject" onchange="renderStatus()">
+              <select id="statusSubject" name="statusSubject" aria-label="Filter subject status by subject" onchange="renderStatus()">
                 <option value="">All Subjects</option>
               </select>
             </div>
@@ -388,6 +664,7 @@
               <thead>
                 <tr>
                   <th>Student</th>
+                  <th>Year Level</th>
                   <th>Subject</th>
                   <th>Final Grade</th>
                   <th>Status</th>
@@ -403,20 +680,24 @@
       <section id="adminAnnouncements" class="page hidden">
         <div class="grid2">
           <div class="panel">
-            <h3>Post Announcement</h3>
+            <h3 id="adminNoticeFormTitle">Post Announcement</h3>
+            <input type="hidden" id="adminNoticeEditId" name="adminNoticeEditId" value="">
             <div class="field">
               <label for="adminNoticeTitle">Notice Title</label>
-              <input id="adminNoticeTitle" placeholder="e.g. Schedule of Quizzes / School Event">
+              <input id="adminNoticeTitle" name="adminNoticeTitle" placeholder="e.g. Schedule of Quizzes / School Event">
             </div>
             <div class="field">
               <label for="adminNoticeTarget">Target Audience / Class</label>
-              <select id="adminNoticeTarget"></select>
+              <select id="adminNoticeTarget" name="adminNoticeTarget"></select>
             </div>
             <div class="field">
               <label for="adminNoticeContent">Announcement Content</label>
-              <textarea id="adminNoticeContent" rows="4" style="width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;resize:vertical;" placeholder="Write message for students and faculty..."></textarea>
+              <textarea id="adminNoticeContent" name="adminNoticeContent" rows="4" draggable="false" style="width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;resize:none;" placeholder="Write message for students and faculty..."></textarea>
             </div>
-            <button class="primary" onclick="postAdminAnnouncement()"><i class="fa-solid fa-paper-plane fa-fw"></i> Post Announcement</button>
+            <div class="actions">
+              <button class="primary" id="adminNoticeSaveBtn" onclick="postAdminAnnouncement()"><i class="fa-solid fa-paper-plane fa-fw"></i> Post Announcement</button>
+              <button type="button" class="secondary hidden" id="adminNoticeCancelBtn" onclick="resetAdminAnnouncementForm()">Cancel Edit</button>
+            </div>
           </div>
 
           <div class="panel">
@@ -452,20 +733,7 @@
                   <th>Status</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr>
-                  <td>admin</td>
-                  <td>Administrator</td>
-                  <td>Administrator</td>
-                  <td><span class="badge regular">Active</span></td>
-                </tr>
-                <tr>
-                  <td>salette.maria</td>
-                  <td>Prof. Maria Santos</td>
-                  <td>Faculty</td>
-                  <td><span class="badge regular">Active</span></td>
-                </tr>
-              </tbody>
+              <tbody id="usersTableBody"></tbody>
             </table>
           </div>
         </div>
@@ -476,8 +744,14 @@
         <div class="panel">
           <h3>Settings</h3>
           <div class="form-grid">
-            <div class="field"><label>School Name</label><input value="Escuela de Nuestra Señora de la Salette"></div>
-            <div class="field"><label>Current School Year</label><input value="2026-2027"></div>
+            <div class="field">
+              <label for="setSchoolName">School Name</label>
+              <input id="setSchoolName" name="schoolName" value="Escuela de Nuestra Señora de la Salette">
+            </div>
+            <div class="field">
+              <label for="setSchoolYear">Current School Year</label>
+              <input id="setSchoolYear" name="schoolYear" value="2026-2027">
+            </div>
           </div>
           <button class="primary" onclick="toast('Settings updated.')">Save Settings</button>
         </div>
@@ -548,7 +822,7 @@
         </div>
       </section>
 
-<!-- 3. GRADES ENTRY -->
+      <!-- 3. GRADES ENTRY -->
       <section id="facultyGrades" class="page hidden">
         <div class="panel">
           <div class="section-head">
@@ -557,7 +831,7 @@
 
           <div class="field">
             <label for="facGradeClassSelect">Assigned Class &amp; Subject</label>
-            <select id="facGradeClassSelect" onchange="renderFacultyGrades()"></select>
+            <select id="facGradeClassSelect" name="facGradeClassSelect" onchange="renderFacultyGrades()"></select>
           </div>
 
           <div class="table-wrap">
@@ -594,16 +868,16 @@
 
           <div class="field">
             <label for="facAttClassSelect">Assigned Class &amp; Subject</label>
-            <select id="facAttClassSelect" onchange="renderFacultyAttendance()"></select>
+            <select id="facAttClassSelect" name="facAttClassSelect" onchange="renderFacultyAttendance()"></select>
           </div>
 
           <div class="field">
             <label for="facAttDate">Attendance Date</label>
-            <input id="facAttDate" type="date" onchange="renderFacultyAttendance()">
+            <input id="facAttDate" name="facAttDate" type="date" onchange="renderFacultyAttendance()">
           </div>
 
           <div class="field">
-            <label>Attendance View Mode</label>
+            <div class="field-group-label">Attendance View Mode</div>
             <div class="fac-att-mode-toggle">
               <button type="button" id="facAttModeDailyBtn" class="active" onclick="toggleAttendanceMode('daily')">Daily Marking</button>
               <button type="button" id="facAttModeMonthlyBtn" onclick="toggleAttendanceMode('monthly')">Monthly Log</button>
@@ -654,24 +928,28 @@
         </div>
       </section>
 
-      <!-- 5. ANNOUNCEMENTS -->
+      <!-- 5. ANNOUNCEMENTS (FACULTY) -->
       <section id="facultyAnnouncements" class="page hidden">
         <div class="grid2">
           <div class="panel">
-            <h3>Post Class Announcement</h3>
+            <h3 id="facNoticeFormTitle">Post Class Announcement</h3>
+            <input type="hidden" id="facNoticeEditId" name="facNoticeEditId" value="">
             <div class="field">
               <label for="facNoticeTitle">Notice Title</label>
-              <input id="facNoticeTitle" placeholder="e.g. Schedule of Quizzes / Project Deadline">
+              <input id="facNoticeTitle" name="facNoticeTitle" placeholder="e.g. Schedule of Quizzes / Project Deadline">
             </div>
             <div class="field">
               <label for="facNoticeTarget">Target Audience / Class</label>
-              <select id="facNoticeTarget"></select>
+              <select id="facNoticeTarget" name="facNoticeTarget"></select>
             </div>
             <div class="field">
               <label for="facNoticeContent">Announcement Content</label>
-              <textarea id="facNoticeContent" rows="4" style="width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;resize:vertical;" placeholder="Write message for students..."></textarea>
+              <textarea id="facNoticeContent" name="facNoticeContent" rows="4" draggable="false" style="width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;resize:none;" placeholder="Write message for students..."></textarea>
             </div>
-            <button class="primary" onclick="postFacultyAnnouncement()"><i class="fa-solid fa-paper-plane fa-fw"></i> Post Announcement</button>
+            <div class="actions">
+              <button class="primary" id="facNoticeSaveBtn" onclick="postFacultyAnnouncement()"><i class="fa-solid fa-paper-plane fa-fw"></i> Post Announcement</button>
+              <button type="button" class="secondary hidden" id="facNoticeCancelBtn" onclick="resetFacultyAnnouncementForm()">Cancel Edit</button>
+            </div>
           </div>
 
           <div class="panel">
@@ -706,15 +984,15 @@
             <h3>Contact &amp; Account Settings</h3>
             <div class="field">
               <label for="facProfileEmail">Academic Email</label>
-              <input id="facProfileEmail" type="email">
+              <input id="facProfileEmail" name="facProfileEmail" type="email">
             </div>
             <div class="field">
               <label for="facProfileContact">Contact Number</label>
-              <input id="facProfileContact">
+              <input id="facProfileContact" name="facProfileContact">
             </div>
             <div class="field">
               <label for="facProfileOffice">Assigned Faculty Room / Office</label>
-              <input id="facProfileOffice">
+              <input id="facProfileOffice" name="facProfileOffice">
             </div>
             <button class="primary" onclick="saveFacultyProfileSettings()"><i class="fa-solid fa-check fa-fw"></i> Update Profile</button>
           </div>
@@ -916,6 +1194,66 @@
     </div>
   </div>
 
+  <!-- 4. Administrator Remove Confirmation Modal -->
+  <div id="adminDeleteModal" class="modal-backdrop hidden" onclick="closeAdminDeleteModal(event)">
+    <div class="modal-card" style="max-width: 440px;" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header-info">
+          <div class="modal-avatar" style="background:#fee2e2;color:#b91c1c;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div>
+            <h3 id="adminDeleteTitle" style="color:#b91c1c;">Remove Record</h3>
+            <span id="adminDeleteSub" class="modal-badge">ID: 0000</span>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeAdminDeleteModal()" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="adminDeleteMessage" style="margin: 0; font-size: 14px; color: var(--text-main); line-height: 1.6;"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="secondary" onclick="closeAdminDeleteModal()">Cancel</button>
+        <button class="primary" onclick="confirmAdminDelete()" style="background:#b91c1c !important;color:#fff !important;border:none !important;box-shadow:0 4px 12px rgba(185,28,28,0.3) !important;">Confirm Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Find Your Account Modal -->
+  <div id="findAccountModal" class="modal-backdrop hidden" onclick="closeFindAccountModal(event)">
+    <div class="modal-card" style="max-width: 500px;" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header-info">
+          <div class="modal-avatar">
+            <i class="fa-solid fa-user-check"></i>
+          </div>
+          <div>
+            <h3>Find Your Account</h3>
+            <span class="modal-badge">Student &amp; Faculty Account Lookup</span>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeFindAccountModal()" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="margin: 0 0 12px 0; font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+          Enter your <b>Full Name</b>, <b>Student ID</b>, or <b>Email Address</b> to locate your e-scuela account.
+        </p>
+        <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+          <input id="findAccountQuery" name="findAccountQuery" type="text" placeholder="e.g. Rosario, 2026-001, or m.santos@salette.edu.ph" style="flex: 1; padding: 11px 13px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 13.5px;" onkeydown="if(event.key==='Enter'){event.preventDefault();searchFindAccount();}">
+          <button type="button" class="primary" onclick="searchFindAccount()" style="white-space: nowrap;">Search</button>
+        </div>
+        <div id="findAccountResults"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="secondary" onclick="closeFindAccountModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
 
   <!-- PDF Engine CDN -->
@@ -933,6 +1271,7 @@
   <script src="js/reports.js"></script>
   <script src="js/student-portal.js"></script>
   <script src="js/faculty.js"></script>
+  <script src="js/admin-management.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

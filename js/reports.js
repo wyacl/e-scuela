@@ -2,90 +2,236 @@
 // REPORTS ENGINE: VIEW MODAL, DIRECT PRINT & AUTO PDF DOWNLOAD
 // ==========================================================
 
+const ADMIN_REPORT_LIST = [
+  "Student Academic Report",
+  "Enrollment Report",
+  "Grade Report",
+  "Subject Status Report",
+  "Student Masterlist"
+];
+
 function renderReportList() {
   const list = $("reportList");
   if (!list) return;
 
-  const adminReports = [
-    "Enrollment Report",
-    "Subject Status Report",
-    "Student Masterlist",
-    "Academic Performance Summary"
-  ];
-
-  list.innerHTML = adminReports.map(r => `
+  list.innerHTML = ADMIN_REPORT_LIST.map(r => `
     <div class="report">
-      <span>${esc(r)}</span>
+      <span><b>${esc(r)}</b></span>
       <div class="report-actions">
-        <button class="secondary table-btn" onclick="viewReport('${r}')"><i class="fa-solid fa-eye fa-fw"></i> View</button>
-        <button class="secondary table-btn" onclick="printReport('${r}')"><i class="fa-solid fa-print fa-fw"></i> Print</button>
-        <button class="primary table-btn" onclick="downloadReportPDF('${r}')"><i class="fa-solid fa-file-pdf fa-fw"></i> Download (PDF)</button>
+        <button class="secondary table-btn" onclick="viewReport('${esc(r)}')"><i class="fa-solid fa-eye fa-fw"></i> View</button>
+        <button class="secondary table-btn" onclick="printReport('${esc(r)}')"><i class="fa-solid fa-print fa-fw"></i> Print</button>
+        <button class="primary table-btn" onclick="downloadReportPDF('${esc(r)}')"><i class="fa-solid fa-file-pdf fa-fw"></i> Download (PDF)</button>
       </div>
     </div>
   `).join("");
 }
 
+function getStudentReportDisplayTitle(name) {
+  if (name === "My Academic Report") return "My Academic Performance Report";
+  if (name === "My Enrollment Report") return "Certificate of Enrollment";
+  if (name === "My Grade Report") return "Official Student Report Card";
+  return name;
+}
+
+function getReportHonorStanding(avg) {
+  if (typeof getHonorStanding === "function") return getHonorStanding(avg);
+  if (avg >= 98) return "With Highest Honors";
+  if (avg >= 95) return "With High Honors";
+  if (avg >= 90) return "With Honors";
+  return avg >= 75 ? "Regular Standing" : "Needs Remediation";
+}
+
 function generateReportHTML(name, isStudent = false) {
   const s = currentStudent;
+  const displayTitle = isStudent ? getStudentReportDisplayTitle(name) : name;
+
   let html = `
     <div class="report-paper" style="box-sizing: border-box; width: 100%; padding: 24px; background: #ffffff; color: #1f2937; font-family: 'Montserrat', Arial, sans-serif;">
       <div style="text-align:center;border-bottom:2px solid #7d090f;padding-bottom:12px;margin-bottom:16px;">
         <h2 style="color:#7d090f;margin:0 0 4px 0;font-size:20px;font-family:'Montserrat', Arial, sans-serif;">Escuela de Nuestra Señora de la Salette</h2>
         <div style="font-size:12px;color:#555;font-family:'Montserrat', Arial, sans-serif;">Official Academic Document • School Year 2026-2027</div>
-        <h3 style="margin:12px 0 0 0;text-transform:uppercase;color:#1f2937;letter-spacing:0.5px;font-family:'Montserrat', Arial, sans-serif;">${esc(name)}</h3>
+        <h3 style="margin:12px 0 0 0;text-transform:uppercase;color:#1f2937;letter-spacing:0.5px;font-family:'Montserrat', Arial, sans-serif;">${esc(displayTitle)}</h3>
       </div>
   `;
 
   if (isStudent && s) {
     const grades = (data.grades && data.grades[s.id]) ? data.grades[s.id] : [];
-    const enr = (data.enrollments && data.enrollments.find(e => e.student === s.id)) || {};
+    const enr = (data.enrollments && data.enrollments.find(e => e.student === s.id)) || {
+      schoolYear: "2026-2027",
+      grade: s.grade,
+      strand: "N/A",
+      section: s.section,
+      date: "2026-06-15",
+      enrollmentStatus: "Enrolled"
+    };
     const studentStatus = s.status === "Regular" ? "Enrolled" : (s.status || "Enrolled");
+    const gpa = avgOf(grades);
+    const numGpa = Number(gpa);
+    const hasCompleted = grades.some(g => typeof calc(g) === "number");
+    const standing = !hasCompleted ? "Pending" : getReportHonorStanding(numGpa);
 
-    html += `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;font-size:13px;font-family:'Montserrat', Arial, sans-serif;">
-        <div><b>Student:</b> ${esc(formatNameId(s))}</div>
-        <div><b>Grade &amp; Section:</b> ${esc(s.grade)} - ${esc(s.section)}</div>
-        <div><b>Status:</b> ${esc(studentStatus)}</div>
-        <div><b>Enrollment Date:</b> ${esc(enr.date || "2026-06-15")}</div>
-      </div>
-      <div class="report-scroll-hint" style="display:none;">Swipe horizontally to view full table &rarr;</div>
-      <div class="report-table-wrap">
-        <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:'Montserrat', Arial, sans-serif;">
-          <thead>
-            <tr style="background:#f8fafc;border-bottom:2px solid #ddd;">
-              <th style="padding:8px;text-align:left;color:#374151;">Subject</th>
-              <th style="padding:8px;text-align:center;color:#374151;">1st</th>
-              <th style="padding:8px;text-align:center;color:#374151;">2nd</th>
-              <th style="padding:8px;text-align:center;color:#374151;">3rd</th>
-              <th style="padding:8px;text-align:center;color:#374151;">4th</th>
-              <th style="padding:8px;text-align:center;color:#374151;">Final</th>
-              <th style="padding:8px;text-align:center;color:#374151;">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${grades.map(g => `
-              <tr style="border-bottom:1px solid #eee;">
-                <td style="padding:8px;">${esc(g[0])}</td>
-                <td style="padding:8px;text-align:center;">${g[1] ?? '—'}</td>
-                <td style="padding:8px;text-align:center;">${g[2] ?? '—'}</td>
-                <td style="padding:8px;text-align:center;">${g[3] ?? '—'}</td>
-                <td style="padding:8px;text-align:center;">${g[4] ?? '—'}</td>
-                <td style="padding:8px;text-align:center;font-weight:700;">${calc(g)}</td>
-                <td style="padding:8px;text-align:center;">${statusOf(calc(g))}</td>
+    if (name === "My Enrollment Report" || name === "Certificate of Enrollment") {
+      // 1. STUDENT CERTIFICATE OF ENROLLMENT
+      const studentSchedules = (data.schedules || []).filter(sch =>
+        (sch.targetType === "student" && sch.studentId === s.id) ||
+        (sch.targetType !== "student" && sch.grade === s.grade && sch.section === s.section)
+      );
+
+      html += `
+        <p style="font-size:13px;line-height:1.7;color:#1f2937;margin:0 0 16px 0;text-align:justify;">
+          This is to officially certify that <b>${esc(s.name)}</b> (Student ID: <b>${esc(s.id)}</b>) is duly registered and <b>${esc(enr.enrollmentStatus || studentStatus)}</b> at <b>Escuela de Nuestra Señora de la Salette</b> for School Year <b>${esc(enr.schoolYear || "2026-2027")}</b>.
+        </p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:16px;font-size:12.5px;">
+          <div><b>Student Name:</b> ${esc(s.name)}</div>
+          <div><b>Student ID Number:</b> ${esc(s.id)}</div>
+          <div><b>Grade Level:</b> ${esc(enr.grade || s.grade)}</div>
+          <div><b>Strand:</b> ${esc(enr.strand || "N/A")}</div>
+          <div><b>Section:</b> ${esc(enr.section || s.section)}</div>
+          <div><b>School Year:</b> ${esc(enr.schoolYear || "2026-2027")}</div>
+          <div><b>Date Enrolled:</b> ${esc(enr.date || "2026-06-15")}</div>
+          <div><b>Enrollment Status:</b> ${esc(enr.enrollmentStatus || studentStatus)}</div>
+          <div><b>Guardian:</b> ${esc(s.guardian || "N/A")}</div>
+          <div><b>Contact Number:</b> ${esc(s.contact || "N/A")}</div>
+        </div>
+
+        <div style="font-size:12.5px;font-weight:700;color:#7d090f;margin-bottom:6px;text-transform:uppercase;">Officially Enrolled Subjects (${grades.length})</div>
+        <div class="report-table-wrap">
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+            <thead>
+              <tr style="background:#f8fafc;border-bottom:2px solid #ddd;">
+                <th style="padding:8px;text-align:left;color:#374151;">#</th>
+                <th style="padding:8px;text-align:left;color:#374151;">Subject</th>
+                <th style="padding:8px;text-align:left;color:#374151;">Schedule</th>
+                <th style="padding:8px;text-align:left;color:#374151;">Room</th>
+                <th style="padding:8px;text-align:left;color:#374151;">Instructor</th>
               </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      </div>
-      <div style="margin-top:16px;text-align:right;font-size:14px;font-family:'Montserrat', Arial, sans-serif;">
-        <b>General Average:</b> <span style="font-size:18px;color:#7d090f;font-weight:800;">${avgOf(grades)}</span>
-      </div>
-    `;
+            </thead>
+            <tbody>
+              ${grades.map((g, idx) => {
+                const sched = studentSchedules.find(sc => sc.subject.toLowerCase() === g[0].toLowerCase());
+                return `
+                  <tr style="border-bottom:1px solid #eee;">
+                    <td style="padding:8px;color:#6b7280;">${idx + 1}</td>
+                    <td style="padding:8px;"><b>${esc(g[0])}</b></td>
+                    <td style="padding:8px;">${sched ? esc(`${sched.day} (${sched.time})`) : "TBA"}</td>
+                    <td style="padding:8px;">${sched ? esc(sched.room) : "TBA"}</td>
+                    <td style="padding:8px;">${sched ? esc(sched.facultyName) : "TBA"}</td>
+                  </tr>
+                `;
+              }).join("") || `<tr><td colspan="5" style="padding:10px;text-align:center;">No subjects enlisted.</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+      `;
+    } else if (name === "My Academic Report" || name === "My Academic Performance Report") {
+      // 2. STUDENT ACADEMIC PERFORMANCE REPORT
+      const passedCount = grades.filter(g => statusOf(calc(g)) === "Passed").length;
+      const failedCount = grades.filter(g => statusOf(calc(g)) === "Failed").length;
+      const pendingCount = grades.filter(g => statusOf(calc(g)) === "Pending").length;
+
+      html += `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;font-size:13px;">
+          <div><b>Student:</b> ${esc(formatNameId(s))}</div>
+          <div><b>Grade &amp; Section:</b> ${esc(s.grade)} - ${esc(s.section)}</div>
+          <div><b>Strand:</b> ${esc(enr.strand || "N/A")}</div>
+          <div><b>Academic Standing:</b> <span style="color:#7d090f;font-weight:700;">${esc(standing)}</span></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;margin-bottom:16px;text-align:center;font-size:12px;">
+          <div style="padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;">
+            <div style="color:#6b7280;font-size:11px;">GENERAL AVERAGE</div>
+            <div style="font-size:17px;font-weight:800;color:#7d090f;">${gpa}</div>
+          </div>
+          <div style="padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;">
+            <div style="color:#6b7280;font-size:11px;">PASSED</div>
+            <div style="font-size:17px;font-weight:800;color:#2e7d32;">${passedCount}</div>
+          </div>
+          <div style="padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;">
+            <div style="color:#6b7280;font-size:11px;">FAILED</div>
+            <div style="font-size:17px;font-weight:800;color:#b91c1c;">${failedCount}</div>
+          </div>
+          <div style="padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;">
+            <div style="color:#6b7280;font-size:11px;">PENDING</div>
+            <div style="font-size:17px;font-weight:800;color:#b26a00;">${pendingCount}</div>
+          </div>
+        </div>
+
+        <div class="report-table-wrap">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead>
+              <tr style="background:#f8fafc;border-bottom:2px solid #ddd;">
+                <th style="padding:8px;text-align:left;color:#374151;">Subject</th>
+                <th style="padding:8px;text-align:center;color:#374151;">Final Rating</th>
+                <th style="padding:8px;text-align:center;color:#374151;">Performance Remark</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${grades.map(g => {
+                const finalVal = calc(g);
+                const st = statusOf(finalVal);
+                return `
+                  <tr style="border-bottom:1px solid #eee;">
+                    <td style="padding:8px;"><b>${esc(g[0])}</b></td>
+                    <td style="padding:8px;text-align:center;font-weight:700;">${finalVal}</td>
+                    <td style="padding:8px;text-align:center;">${esc(st)}</td>
+                  </tr>
+                `;
+              }).join("") || `<tr><td colspan="3" style="padding:10px;text-align:center;">No subject performance records available.</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+      `;
+    } else {
+      // 3. STUDENT OFFICIAL REPORT CARD (My Grade Report)
+      html += `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;font-size:13px;">
+          <div><b>Student:</b> ${esc(formatNameId(s))}</div>
+          <div><b>Grade &amp; Section:</b> ${esc(s.grade)} - ${esc(s.section)}</div>
+          <div><b>Status:</b> ${esc(studentStatus)}</div>
+          <div><b>Enrollment Date:</b> ${esc(enr.date || "2026-06-15")}</div>
+        </div>
+        <div class="report-scroll-hint" style="display:none;">Swipe horizontally to view full table &rarr;</div>
+        <div class="report-table-wrap">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead>
+              <tr style="background:#f8fafc;border-bottom:2px solid #ddd;">
+                <th style="padding:8px;text-align:left;color:#374151;">Subject</th>
+                <th style="padding:8px;text-align:center;color:#374151;">1st</th>
+                <th style="padding:8px;text-align:center;color:#374151;">2nd</th>
+                <th style="padding:8px;text-align:center;color:#374151;">3rd</th>
+                <th style="padding:8px;text-align:center;color:#374151;">4th</th>
+                <th style="padding:8px;text-align:center;color:#374151;">Final</th>
+                <th style="padding:8px;text-align:center;color:#374151;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${grades.map(g => `
+                <tr style="border-bottom:1px solid #eee;">
+                  <td style="padding:8px;">${esc(g[0])}</td>
+                  <td style="padding:8px;text-align:center;">${formatQuarter(g[1])}</td>
+                  <td style="padding:8px;text-align:center;">${formatQuarter(g[2])}</td>
+                  <td style="padding:8px;text-align:center;">${formatQuarter(g[3])}</td>
+                  <td style="padding:8px;text-align:center;">${formatQuarter(g[4])}</td>
+                  <td style="padding:8px;text-align:center;font-weight:700;">${calc(g)}</td>
+                  <td style="padding:8px;text-align:center;">${statusOf(calc(g))}</td>
+                </tr>
+              `).join("") || `<tr><td colspan="7" style="padding:10px;text-align:center;">No grades recorded.</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top:16px;display:flex;justify-content:space-between;align-items:center;font-size:14px;">
+          <div><b>Academic Standing:</b> <span style="color:#374151;font-weight:700;">${esc(standing)}</span></div>
+          <div><b>General Average:</b> <span style="font-size:18px;color:#7d090f;font-weight:800;">${gpa}</span></div>
+        </div>
+      `;
+    }
   } else if (name === "Enrollment Report") {
+    // ADMIN: ENROLLMENT REPORT
     html += `
       <div class="report-scroll-hint" style="display:none;">Swipe horizontally to view full table &rarr;</div>
       <div class="report-table-wrap">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:'Montserrat', Arial, sans-serif;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead>
             <tr style="background:#f8fafc;border-bottom:2px solid #ddd;">
               <th style="padding:8px;text-align:left;color:#374151;">Student</th>
@@ -110,19 +256,64 @@ function generateReportHTML(name, isStudent = false) {
                 <td style="padding:8px;text-align:center;">${esc(e.date || "2026-06-15")}</td>
                 <td style="padding:8px;text-align:center;">${esc(enrollStatus)}</td>
               </tr>`;
-            }).join("")}
+            }).join("") || `<tr><td colspan="7" style="padding:10px;text-align:center;">No enrollment records found.</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } else if (name === "Grade Report") {
+    // ADMIN: GRADE REPORT (Quarterly & Final Grades across Students & Subjects)
+    html += `
+      <div class="report-scroll-hint" style="display:none;">Swipe horizontally to view full table &rarr;</div>
+      <div class="report-table-wrap">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="background:#f8fafc;border-bottom:2px solid #ddd;">
+              <th style="padding:8px;text-align:left;color:#374151;">Student</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Grade &amp; Section</th>
+              <th style="padding:8px;text-align:left;color:#374151;">Subject</th>
+              <th style="padding:8px;text-align:center;color:#374151;">1st</th>
+              <th style="padding:8px;text-align:center;color:#374151;">2nd</th>
+              <th style="padding:8px;text-align:center;color:#374151;">3rd</th>
+              <th style="padding:8px;text-align:center;color:#374151;">4th</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Final</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Remarks</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.students.flatMap(st => {
+              const subs = data.grades[st.id] || [];
+              return subs.map(g => {
+                const finalScore = calc(g);
+                return `
+                  <tr style="border-bottom:1px solid #eee;">
+                    <td style="padding:8px;"><b>${esc(formatNameId(st))}</b></td>
+                    <td style="padding:8px;text-align:center;">${esc(st.grade)} - ${esc(st.section)}</td>
+                    <td style="padding:8px;">${esc(g[0])}</td>
+                    <td style="padding:8px;text-align:center;">${formatQuarter(g[1])}</td>
+                    <td style="padding:8px;text-align:center;">${formatQuarter(g[2])}</td>
+                    <td style="padding:8px;text-align:center;">${formatQuarter(g[3])}</td>
+                    <td style="padding:8px;text-align:center;">${formatQuarter(g[4])}</td>
+                    <td style="padding:8px;text-align:center;font-weight:700;">${finalScore}</td>
+                    <td style="padding:8px;text-align:center;">${statusOf(finalScore)}</td>
+                  </tr>
+                `;
+              });
+            }).join("") || `<tr><td colspan="9" style="padding:10px;text-align:center;">No grade records available.</td></tr>`}
           </tbody>
         </table>
       </div>
     `;
   } else if (name === "Subject Status Report") {
+    // ADMIN: SUBJECT STATUS REPORT
     html += `
       <div class="report-scroll-hint" style="display:none;">Swipe horizontally to view full table &rarr;</div>
       <div class="report-table-wrap">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:'Montserrat', Arial, sans-serif;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead>
             <tr style="background:#f8fafc;border-bottom:2px solid #ddd;">
               <th style="padding:8px;text-align:left;color:#374151;">Student</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Year Level</th>
               <th style="padding:8px;text-align:left;color:#374151;">Subject</th>
               <th style="padding:8px;text-align:center;color:#374151;">Final Grade</th>
               <th style="padding:8px;text-align:center;color:#374151;">Status</th>
@@ -134,57 +325,65 @@ function generateReportHTML(name, isStudent = false) {
               return subs.map(g => `
                 <tr style="border-bottom:1px solid #eee;">
                   <td style="padding:8px;"><b>${esc(st ? formatNameId(st) : id)}</b></td>
+                  <td style="padding:8px;text-align:center;">${esc(st?.grade || "N/A")}</td>
                   <td style="padding:8px;">${esc(g[0])}</td>
                   <td style="padding:8px;text-align:center;font-weight:700;">${calc(g)}</td>
                   <td style="padding:8px;text-align:center;">${statusOf(calc(g))}</td>
                 </tr>
               `);
-            }).join("")}
+            }).join("") || `<tr><td colspan="5" style="padding:10px;text-align:center;">No subject status records available.</td></tr>`}
           </tbody>
         </table>
       </div>
     `;
   } else if (name === "Student Masterlist") {
+    // ADMIN: STUDENT MASTERLIST
     html += `
       <div class="report-scroll-hint" style="display:none;">Swipe horizontally to view full table &rarr;</div>
       <div class="report-table-wrap">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:'Montserrat', Arial, sans-serif;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead>
             <tr style="background:#f8fafc;border-bottom:2px solid #ddd;">
+              <th style="padding:8px;text-align:left;color:#374151;">#</th>
               <th style="padding:8px;text-align:left;color:#374151;">Student</th>
               <th style="padding:8px;text-align:center;color:#374151;">Grade</th>
               <th style="padding:8px;text-align:center;color:#374151;">Section</th>
               <th style="padding:8px;text-align:center;color:#374151;">Contact Number</th>
+              <th style="padding:8px;text-align:left;color:#374151;">Guardian</th>
               <th style="padding:8px;text-align:center;color:#374151;">Status</th>
             </tr>
           </thead>
           <tbody>
-            ${data.students.map(st => {
+            ${data.students.map((st, idx) => {
               const studentStatus = st.status === "Regular" ? "Enrolled" : (st.status || "Enrolled");
               return `
                 <tr style="border-bottom:1px solid #eee;">
+                  <td style="padding:8px;color:#6b7280;">${idx + 1}</td>
                   <td style="padding:8px;"><b>${esc(formatNameId(st))}</b></td>
                   <td style="padding:8px;text-align:center;">${esc(st.grade)}</td>
                   <td style="padding:8px;text-align:center;">${esc(st.section)}</td>
                   <td style="padding:8px;text-align:center;">${esc(st.contact || "N/A")}</td>
+                  <td style="padding:8px;">${esc(st.guardian || "N/A")}</td>
                   <td style="padding:8px;text-align:center;">${esc(studentStatus)}</td>
                 </tr>
               `;
-            }).join("")}
+            }).join("") || `<tr><td colspan="7" style="padding:10px;text-align:center;">No students registered.</td></tr>`}
           </tbody>
         </table>
       </div>
     `;
   } else {
+    // ADMIN: STUDENT ACADEMIC REPORT (General Average, Subjects Taken & Honors Standing)
     html += `
       <div class="report-scroll-hint" style="display:none;">Swipe horizontally to view full table &rarr;</div>
       <div class="report-table-wrap">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:'Montserrat', Arial, sans-serif;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead>
             <tr style="background:#f8fafc;border-bottom:2px solid #ddd;">
               <th style="padding:8px;text-align:left;color:#374151;">Student</th>
               <th style="padding:8px;text-align:center;color:#374151;">Grade</th>
               <th style="padding:8px;text-align:center;color:#374151;">Section</th>
+              <th style="padding:8px;text-align:center;color:#374151;">Subjects</th>
               <th style="padding:8px;text-align:center;color:#374151;">General Average</th>
               <th style="padding:8px;text-align:center;color:#374151;">Academic Standing</th>
             </tr>
@@ -193,14 +392,17 @@ function generateReportHTML(name, isStudent = false) {
             ${data.students.map(st => {
               const gr = data.grades[st.id] || [];
               const gpa = avgOf(gr);
+              const hasCompleted = gr.some(g => typeof calc(g) === "number");
+              const standing = !hasCompleted ? "Pending" : getReportHonorStanding(Number(gpa));
               return `<tr style="border-bottom:1px solid #eee;">
                 <td style="padding:8px;"><b>${esc(formatNameId(st))}</b></td>
                 <td style="padding:8px;text-align:center;">${esc(st.grade)}</td>
                 <td style="padding:8px;text-align:center;">${esc(st.section)}</td>
+                <td style="padding:8px;text-align:center;">${gr.length}</td>
                 <td style="padding:8px;text-align:center;font-weight:700;">${gpa}</td>
-                <td style="padding:8px;text-align:center;">${Number(gpa) >= 75 ? "Passed" : "Conditional"}</td>
+                <td style="padding:8px;text-align:center;">${esc(standing)}</td>
               </tr>`;
-            }).join("")}
+            }).join("") || `<tr><td colspan="6" style="padding:10px;text-align:center;">No student academic records available.</td></tr>`}
           </tbody>
         </table>
       </div>
@@ -221,7 +423,7 @@ function generateReportHTML(name, isStudent = false) {
 function viewReport(name) {
   $("modalReportTitle").textContent = name;
   $("modalReportContent").innerHTML = generateReportHTML(name, false);
-  
+
   if ($("modalPrintBtn")) $("modalPrintBtn").onclick = () => printReport(name);
   if ($("modalDownloadPdfBtn")) $("modalDownloadPdfBtn").onclick = () => downloadReportPDF(name);
 
@@ -229,7 +431,7 @@ function viewReport(name) {
 }
 
 function viewStudentReport(name) {
-  $("modalReportTitle").textContent = name;
+  $("modalReportTitle").textContent = getStudentReportDisplayTitle(name);
   $("modalReportContent").innerHTML = generateReportHTML(name, true);
 
   if ($("modalPrintBtn")) $("modalPrintBtn").onclick = () => printStudentReport(name);
@@ -250,7 +452,7 @@ function printReport(name) {
 }
 
 function printStudentReport(name) {
-  executePrintWindow(name, generateReportHTML(name, true));
+  executePrintWindow(getStudentReportDisplayTitle(name), generateReportHTML(name, true));
 }
 
 function executePrintWindow(title, bodyHTML) {
@@ -300,7 +502,8 @@ function downloadReportPDF(name) {
 
 function downloadStudentReportPDF(name) {
   const studentId = currentStudent?.id || "Student";
-  const filename = `${name.replace(/\s+/g, '_')}_${studentId}.pdf`;
+  const cleanTitle = getStudentReportDisplayTitle(name).replace(/\s+/g, '_');
+  const filename = `${cleanTitle}_${studentId}.pdf`;
   executeAutomaticPDFDownload(filename, generateReportHTML(name, true));
 }
 

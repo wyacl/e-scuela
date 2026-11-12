@@ -19,14 +19,17 @@ function syncEnrollmentStudentData() {
     dateInput.max = today;
   }
 
-  if ($("eStrand") && existing?.strand && existing.strand !== "N/A") {
-    $("eStrand").value = existing.strand;
+  if ($("eStrand")) {
+    if (existing?.strand && existing.strand !== "N/A") {
+      $("eStrand").value = existing.strand;
+    } else if (s.section && s.section.includes("-")) {
+      const secStrand = s.section.split("-")[0];
+      if (shsStrands.includes(secStrand)) $("eStrand").value = secStrand;
+    }
   }
 
   updateEnrollmentFields();
   if (existing?.section && $("eSection")) $("eSection").value = existing.section;
-
-  renderEnrollmentSubjects(sId);
 }
 
 function updateEnrollmentFields() {
@@ -39,29 +42,47 @@ function updateEnrollmentFields() {
   if (strandField) strandField.style.display = isSHS ? "" : "none";
 
   const sectionSelect = $("eSection");
-  if (!sectionSelect) return;
-
-  if (isSHS) {
-    const strand = $("eStrand")?.value || "STEM";
-    const sections = [`${strand}-A`, `${strand}-B`, `${strand}-C`];
-    sectionSelect.innerHTML = sections.map(sec => `<option value="${sec}">${sec}</option>`).join("");
-  } else {
-    sectionSelect.innerHTML = [
-      `<option value="Section A">Section A</option>`,
-      `<option value="Section B">Section B</option>`,
-      `<option value="Section C">Section C</option>`
-    ].join("");
+  if (sectionSelect) {
+    if (isSHS) {
+      const strand = $("eStrand")?.value || "ABM";
+      const sections = [`${strand}-A`, `${strand}-B`, `${strand}-C`];
+      sectionSelect.innerHTML = sections.map(sec => `<option value="${sec}">${sec}</option>`).join("");
+    } else {
+      sectionSelect.innerHTML = [
+        `<option value="Section A">Section A</option>`,
+        `<option value="Section B">Section B</option>`,
+        `<option value="Section C">Section C</option>`
+      ].join("");
+    }
   }
+
+  if (sId) renderEnrollmentSubjects(sId);
 }
 
 function renderEnrollmentSubjects(studentId) {
   const container = $("enrollmentSubjects");
   if (!container) return;
+
+  const s = data.students.find(x => x.id === studentId);
+  const grade = s?.grade || $("eGrade")?.value || "";
+  const isSHS = grade === "Grade 11" || grade === "Grade 12";
+  const strand = isSHS ? ($("eStrand")?.value || "ABM") : "";
+
+  const assignedSubjects = getSubjectsForGrade(grade, strand);
   const currentGrades = data.grades[studentId] || [];
   const existingNames = currentGrades.map(g => g[0]);
 
-  container.innerHTML = availableSubjects.map(sub => {
-    const isChecked = existingNames.length > 0 ? existingNames.includes(sub) : true;
+  if (!assignedSubjects.length) {
+    container.innerHTML = `<span style="color:var(--text-muted);font-size:13px;">No subjects assigned to ${esc(grade)}${isSHS ? ` (${esc(strand)})` : ""} yet. Assign subjects in the Subjects menu.</span>`;
+    return;
+  }
+
+  const hasOverlap = assignedSubjects.some(sub => existingNames.includes(sub));
+
+  container.innerHTML = assignedSubjects.map(sub => {
+    const isChecked = hasOverlap
+      ? existingNames.includes(sub)
+      : true;
     return `
       <label class="subject-checkbox-label">
         <input type="checkbox" name="enrollSubject" value="${esc(sub)}" ${isChecked ? "checked" : ""}>
@@ -97,7 +118,7 @@ function saveEnrollment() {
     student: id,
     schoolYear: val("eSY") || "2026-2027",
     grade: s.grade,
-    strand: (s.grade === "Grade 11" || s.grade === "Grade 12") ? (val("eStrand") || "STEM") : "N/A",
+    strand: (s.grade === "Grade 11" || s.grade === "Grade 12") ? (val("eStrand") || "ABM") : "N/A",
     section,
     date,
     status: enrollmentStatus,

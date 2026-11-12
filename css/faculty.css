@@ -216,6 +216,27 @@
 }
 
 /* Announcement Feed */
+#adminNoticeContent,
+#facNoticeContent {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-main);
+  background: #ffffff;
+  resize: none !important;
+  box-sizing: border-box;
+  transition: border-color var(--trans-fast), box-shadow var(--trans-fast);
+}
+
+#adminNoticeContent:focus,
+#facNoticeContent:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--border-focus);
+}
+
 .fac-notice-item {
   border: 1px solid var(--border);
   border-radius: 12px;

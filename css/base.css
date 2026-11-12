@@ -43,6 +43,10 @@ html, body {
   color: var(--text-main);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  caret-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
 }
 
 body.drawer-locked {
@@ -56,6 +60,31 @@ button, input, select {
 
 input, select {
   font-size: 15px;
+}
+
+select {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+input:not([readonly]):not(:disabled),
+textarea:not([readonly]):not(:disabled) {
+  caret-color: var(--text-main);
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+input[readonly],
+input:disabled,
+textarea[readonly],
+textarea:disabled {
+  caret-color: transparent !important;
+  cursor: not-allowed;
 }
 
 .hidden {
@@ -173,7 +202,8 @@ select:focus-visible {
   margin: 14px 0;
 }
 
-.field label {
+.field label,
+.field-group-label {
   display: block;
   font-size: 13px;
   font-weight: 600;
@@ -190,6 +220,10 @@ select:focus-visible {
   background: #fff;
   color: var(--text-main);
   transition: border-color var(--trans-fast), box-shadow var(--trans-fast);
+}
+
+.field select {
+  padding-right: 34px;
 }
 
 .field input:focus,

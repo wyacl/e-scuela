@@ -80,6 +80,11 @@ function renderAll() {
   renderPerformance();
   populateStatusSubjects();
   renderStatus();
+
+  if (typeof renderAdminFaculty === "function") renderAdminFaculty();
+  if (typeof renderAdminSubjects === "function") renderAdminSubjects();
+  if (typeof renderAdminSchedules === "function") renderAdminSchedules();
+  if (typeof renderUsersTable === "function") renderUsersTable();
 }
 
 function toast(msg) {
@@ -97,12 +102,14 @@ document.addEventListener("DOMContentLoaded", () => {
   $("eStudent")?.addEventListener("change", syncEnrollmentStudentData);
   $("eStrand")?.addEventListener("change", updateEnrollmentFields);
 
-  document.addEventListener("keydown", e => {
+document.addEventListener("keydown", e => {
     if (e.key === "Escape") {
       closeDrawer();
       closeStudentModal();
       closeReportModal();
       closeDeleteModal();
+      if (typeof closeAdminDeleteModal === "function") closeAdminDeleteModal();
+      if (typeof closeFindAccountModal === "function") closeFindAccountModal();
     }
   });
 
@@ -115,20 +122,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  if ($("reportList")) {
-    $("reportList").innerHTML = [
-      "Student Academic Report", "Enrollment Report", "Grade Report",
-      "Subject Status Report", "Student Masterlist"
-    ].map(n => `
-      <div class="report">
-        <span><b>${esc(n)}</b></span>
-        <div class="report-actions">
-          <button class="secondary table-btn" onclick="viewReport('${esc(n)}')"><i class="fa-solid fa-eye fa-fw"></i> View</button>
-          <button class="secondary table-btn" onclick="printReport('${esc(n)}')"><i class="fa-solid fa-print fa-fw"></i> Print</button>
-          <button class="primary table-btn" onclick="downloadReportPDF('${esc(n)}')"><i class="fa-solid fa-file-pdf fa-fw"></i> Download (PDF)</button>
-        </div>
-      </div>`
-    ).join("");
+  if (typeof renderReportList === "function") {
+    renderReportList();
   }
 
   const idInp = $("fId");
