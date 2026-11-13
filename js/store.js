@@ -477,8 +477,18 @@ data.enrollments.forEach(e => {
 });
 
 (data.facultyList || []).forEach(f => {
-  if (typeof f.department === "string" && f.department.includes("STEM")) {
-    f.department = f.department.replace(/STEM/g, "Senior High School");
+  const validDepts = ["Elementary", "Junior High School", "Senior High School"];
+  if (!validDepts.includes(f.department)) {
+    const defFac = defaultFacultyList.find(d => d.id === f.id);
+    if (defFac) {
+      f.department = defFac.department;
+    } else if (/elementary/i.test(f.department || "")) {
+      f.department = "Elementary";
+    } else if (/junior/i.test(f.department || "")) {
+      f.department = "Junior High School";
+    } else {
+      f.department = "Senior High School";
+    }
   }
   if (!f.status) f.status = "Active";
 });
