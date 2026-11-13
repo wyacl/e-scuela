@@ -4,10 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Escuela de Nuestra Señora de la Salette</title>
+  <link id="appFavicon" rel="icon" type="image/webp" href="la logo.webp">
 
   <!-- Typography & Icons -->
+  <!-- Typography & Icons -->
+  <!-- Typography & Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="fa-icons/css/all.min.css">
 
   <!-- Section-separated Stylesheets -->
   <link rel="stylesheet" href="css/base.css">
@@ -17,6 +20,12 @@
   <link rel="stylesheet" href="css/performance.css">
   <link rel="stylesheet" href="css/reports.css">
   <link rel="stylesheet" href="css/faculty.css">
+
+  <script>
+    if (sessionStorage.getItem("eScuelaSession")) {
+      document.documentElement.classList.add("has-session");
+    }
+  </script>
 </head>
 <body>
 
@@ -60,17 +69,20 @@
           </div>
 
           <!-- Credentials Form -->
-          <div class="field">
-            <label for="username" id="usernameLabel">Username</label>
-            <input id="username" name="username" type="text" placeholder="Enter username" autocomplete="username">
-          </div>
+          <form onsubmit="event.preventDefault(); login();">
+            <div class="field">
+              <label for="username" id="usernameLabel">Username</label>
+              <input id="username" name="username" type="text" placeholder="Enter username" autocomplete="username">
+            </div>
 
-          <div class="field">
-            <label for="password">Password</label>
-            <input id="password" name="password" type="password" placeholder="Enter password" autocomplete="current-password">
-          </div>
+            <div class="field">
+              <label for="password">Password</label>
+              <input id="password" name="password" type="password" placeholder="Enter password" autocomplete="current-password">
+            </div>
 
-          <button class="primary login-button" onclick="login()">Login</button>
+            <button type="submit" class="primary login-button">Login</button>
+          </form>
+
           <div id="loginError" class="error"></div>
 
           <div class="login-helper">
@@ -119,8 +131,6 @@
         <div class="cards">
           <div class="card"><div class="label">Total Students</div><div class="value" id="totalStudents">0</div></div>
           <div class="card"><div class="label">Enrolled Students</div><div class="value" id="enrolledStudents">0</div></div>
-          <div class="card"><div class="label">Grade 12 Students</div><div class="value" id="graduatingStudents">0</div></div>
-          <div class="card"><div class="label">Failed Subjects</div><div class="value" id="failedCount">0</div></div>
           <div class="card"><div class="label">Dropped Students</div><div class="value" id="droppedCount">0</div></div>
         </div>
 
@@ -252,7 +262,11 @@
             </div>
             <div class="field">
               <label for="facDeptInput">Academic Department</label>
-              <input id="facDeptInput" name="facDeptInput" placeholder="e.g. Junior High School / Senior High School">
+              <select id="facDeptInput" name="facDeptInput">
+                <option value="Elementary">Elementary</option>
+                <option value="Junior High School">Junior High School</option>
+                <option value="Senior High School">Senior High School</option>
+              </select>
             </div>
             <div class="field">
               <label for="facEmailInput">Email Address</label>
@@ -270,7 +284,9 @@
               <label for="facStatusInput">Account Status</label>
               <select id="facStatusInput" name="facStatusInput">
                 <option value="Active">Active</option>
+                <option value="On Leave">On Leave</option>
                 <option value="Inactive">Inactive</option>
+               <option value="Resigned">Resigned</option>
               </select>
             </div>
 
@@ -315,7 +331,7 @@
         <div class="panel">
           <div class="section-head">
             <h3 id="subFormTitle">Add Subject &amp; Grade Assignment</h3>
-            <small style="color:var(--text-muted);">Create subjects and assign them to specific grade levels and strands</small>
+            <small style="color:var(--text-muted);">Create subjects and assign them to specific grade levels, strands, and semesters</small>
           </div>
 
           <input type="hidden" id="subEditId" name="subEditId" value="">
@@ -340,9 +356,17 @@
               <div id="subGradeCheckboxes" class="subject-checkbox-grid"></div>
             </div>
 
-            <div class="field span-2" id="subStrandGroup">
-              <div class="field-group-label" style="font-weight:700;margin-bottom:8px;">Assign to Strand (For Grade 11 &amp; 12 — select both for Core subjects)</div>
+            <div class="field" id="subStrandGroup">
+              <div class="field-group-label" style="font-weight:700;margin-bottom:8px;">Assign to Strand (For Grade 11 &amp; 12)</div>
               <div id="subStrandCheckboxes" class="subject-checkbox-grid"></div>
+            </div>
+
+            <div class="field" id="subSemesterGroup">
+              <label for="subSemesterInput">Assign to Semester (For Grade 11 &amp; 12)</label>
+              <select id="subSemesterInput" name="subSemesterInput">
+                <option value="1st Sem">1st Sem</option>
+                <option value="2nd Sem">2nd Sem</option>
+              </select>
             </div>
           </div>
 
@@ -364,6 +388,7 @@
                   <th>Subject Name</th>
                   <th>Assigned Grade Levels</th>
                   <th>Assigned Strand (SHS)</th>
+                  <th>Semester (SHS)</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -412,6 +437,13 @@
                 <option value="HUMSS">HUMSS</option>
               </select>
             </div>
+            <div class="field" id="schSemesterField">
+              <label for="schSemester">Semester</label>
+              <select id="schSemester" name="schSemester" onchange="updateScheduleSectionFields()">
+                <option value="1st Sem">1st Sem</option>
+                <option value="2nd Sem">2nd Sem</option>
+              </select>
+            </div>
             <div class="field">
               <label for="schSection">Section</label>
               <select id="schSection" name="schSection"></select>
@@ -458,6 +490,11 @@
               <select id="schFilterGrade" name="schFilterGrade" aria-label="Filter schedules by grade level" onchange="renderAdminSchedules()">
                 <option value="">All Grade Levels</option>
               </select>
+              <select id="schFilterSemester" name="schFilterSemester" aria-label="Filter schedules by semester" onchange="renderAdminSchedules()">
+                <option value="">All Semesters</option>
+                <option value="1st Sem">1st Sem</option>
+                <option value="2nd Sem">2nd Sem</option>
+              </select>
             </div>
           </div>
 
@@ -468,6 +505,7 @@
                   <th>Faculty Member</th>
                   <th>Subject</th>
                   <th>Class / Student</th>
+                  <th>Semester</th>
                   <th>Day</th>
                   <th>Time</th>
                   <th>Room</th>
@@ -497,14 +535,21 @@
               <input id="eSY" name="eSY" value="2026-2027">
             </div>
             <div class="field">
-              <label for="eGrade">Grade Level (Auto-synced)</label>
-              <input id="eGrade" name="eGrade" readonly style="background:#f8fafc;cursor:not-allowed;">
+              <label for="eGrade">Grade Level</label>
+              <select id="eGrade" name="eGrade" onchange="updateEnrollmentFields()"></select>
             </div>
             <div class="field">
               <label for="eStrand">Strand / Course</label>
               <select id="eStrand" name="eStrand">
                 <option value="ABM" selected>ABM</option>
                 <option value="HUMSS">HUMSS</option>
+              </select>
+            </div>
+            <div class="field" id="eSemesterField">
+              <label for="eSemester">Semester</label>
+              <select id="eSemester" name="eSemester" onchange="updateEnrollmentFields()">
+                <option value="1st Sem">1st Sem</option>
+                <option value="2nd Sem">2nd Sem</option>
               </select>
             </div>
             <div class="field">
@@ -525,7 +570,7 @@
             </div>
 
             <div class="field span-2">
-              <div class="field-group-label" style="font-weight:700;margin-bottom:10px;">Subjects to Take (Assigned to student's grade level &amp; strand)</div>
+              <div class="field-group-label" style="font-weight:700;margin-bottom:10px;">Subjects to Take (Assigned to student's grade level, strand &amp; semester)</div>
               <div id="enrollmentSubjects" class="subject-checkbox-grid"></div>
             </div>
           </div>
@@ -545,6 +590,7 @@
                   <th>School Year</th>
                   <th>Grade</th>
                   <th>Strand</th>
+                  <th>Semester</th>
                   <th>Section</th>
                   <th>Enrollment Date</th>
                   <th>Status</th>
@@ -574,6 +620,11 @@
               <select id="gradeFilterSection" name="gradeFilterSection" aria-label="Filter grades by section" onchange="filterGradeStudents()">
                 <option value="">All Sections</option>
               </select>
+              <select id="gradeFilterSemester" name="gradeFilterSemester" aria-label="Filter grades by semester" onchange="renderGrades()">
+                <option value="">All Semesters</option>
+                <option value="1st Sem">1st Sem</option>
+                <option value="2nd Sem">2nd Sem</option>
+              </select>
             </div>
 
             <select id="gradeStudent" name="gradeStudent" aria-label="Select student for grades" onchange="renderGrades()"></select>
@@ -584,6 +635,7 @@
               <thead>
                 <tr>
                   <th>Subject</th>
+                  <th>Semester</th>
                   <th>1st</th>
                   <th>2nd</th>
                   <th>3rd</th>
@@ -603,7 +655,7 @@
         </div>
       </section>
 
-      <!-- 5. ACADEMIC PERFORMANCE (FILTERED BY GRADE LEVEL & SHS STRAND) -->
+      <!-- 5. ACADEMIC PERFORMANCE (FILTERED BY GRADE LEVEL, SHS STRAND & SEMESTER) -->
       <section id="performance" class="page hidden">
         <div class="panel">
           <div class="section-head">
@@ -616,6 +668,11 @@
                 <option value="">All Strands</option>
                 <option value="ABM">ABM</option>
                 <option value="HUMSS">HUMSS</option>
+              </select>
+              <select id="perfSemesterFilter" name="perfSemesterFilter" aria-label="Filter academic performance by semester" onchange="renderPerformance()" style="display:none;">
+                <option value="">All Semesters</option>
+                <option value="1st Sem">1st Sem</option>
+                <option value="2nd Sem">2nd Sem</option>
               </select>
             </div>
           </div>
@@ -715,8 +772,25 @@
       <section id="reports" class="page hidden">
         <div class="panel">
           <div class="section-head">
-            <h3>Official Reports</h3>
-            <small style="color:var(--text-muted);">Preview reports on-screen, print directly, or download as official PDF files</small>
+            <div>
+              <h3>Official Reports</h3>
+              <small style="color:var(--text-muted);">Preview reports on-screen, print directly, or download as official PDF files</small>
+            </div>
+            <div class="filters" style="margin:0;">
+              <select id="reportGradeFilter" name="reportGradeFilter" aria-label="Filter reports by grade level" onchange="handleAdminReportFilterChange()">
+                <option value="">All Grade Levels</option>
+              </select>
+              <select id="reportStrandFilter" name="reportStrandFilter" aria-label="Filter reports by strand" onchange="handleAdminReportFilterChange()">
+                <option value="">All Strands</option>
+                <option value="ABM">ABM</option>
+                <option value="HUMSS">HUMSS</option>
+              </select>
+              <select id="reportSemesterFilter" name="reportSemesterFilter" aria-label="Filter reports by semester" onchange="handleAdminReportFilterChange()">
+                <option value="">All Semesters</option>
+                <option value="1st Sem">1st Sem</option>
+                <option value="2nd Sem">2nd Sem</option>
+              </select>
+            </div>
           </div>
           <div class="report-list" id="reportList"></div>
         </div>
@@ -967,8 +1041,18 @@
       <section id="facultyReports" class="page hidden">
         <div class="panel">
           <div class="section-head">
-            <h3>Faculty Academic Reports</h3>
-            <small style="color:var(--text-muted);">Preview official class grading sheets, print, or export to PDF</small>
+            <div>
+              <h3>Faculty Academic Reports</h3>
+              <small style="color:var(--text-muted);">Preview official class grading sheets, print, or export to PDF</small>
+            </div>
+            <div class="filters" style="margin:0;">
+              <select id="facReportSemFilter" name="facReportSemFilter" aria-label="Filter faculty reports by semester" onchange="handleFacReportSemChange()">
+                <option value="">All Semesters</option>
+                <option value="1st Sem">1st Sem</option>
+                <option value="2nd Sem">2nd Sem</option>
+              </select>
+              <select id="facReportClassSelect" name="facReportClassSelect" aria-label="Select class for faculty report"></select>
+            </div>
           </div>
           <div class="report-list" id="facReportsList"></div>
         </div>
@@ -1031,16 +1115,25 @@
       <section id="studentEnrollment" class="page hidden">
         <div class="panel">
           <h3>My Enrollment Information</h3>
-          <div id="myEnrollmentDetails" class="portal-cards"></div>
+          <div id="myEnrollmentDetails" class="profile-box" style="grid-template-columns: 1fr;"></div>
         </div>
       </section>
 
       <section id="studentSubjects" class="page hidden">
         <div class="panel">
-          <h3>My Subjects</h3>
+          <div class="section-head">
+            <h3>My Subjects</h3>
+            <div class="filters" style="margin:0;">
+              <select id="studentSubjectsSemFilter" name="studentSubjectsSemFilter" aria-label="Filter subjects by semester" onchange="renderStudentPortal()">
+                <option value="">All Semesters</option>
+                <option value="1st Sem">1st Sem</option>
+                <option value="2nd Sem">2nd Sem</option>
+              </select>
+            </div>
+          </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Subject</th><th>Final Grade</th><th>Status</th></tr></thead>
+              <thead><tr><th>Subject</th><th>Semester</th><th>Final Grade</th><th>Status</th></tr></thead>
               <tbody id="mySubjectsTable"></tbody>
             </table>
           </div>
@@ -1049,10 +1142,19 @@
 
       <section id="studentGrades" class="page hidden">
         <div class="panel">
-          <h3>My Grades</h3>
+          <div class="section-head">
+            <h3>My Grades</h3>
+            <div class="filters" style="margin:0;">
+              <select id="studentGradesSemFilter" name="studentGradesSemFilter" aria-label="Filter grades by semester" onchange="renderStudentPortal()">
+                <option value="">All Semesters</option>
+                <option value="1st Sem">1st Sem</option>
+                <option value="2nd Sem">2nd Sem</option>
+              </select>
+            </div>
+          </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Subject</th><th>1st</th><th>2nd</th><th>3rd</th><th>4th</th><th>Final</th><th>Status</th></tr></thead>
+              <thead><tr><th>Subject</th><th>Semester</th><th>1st</th><th>2nd</th><th>3rd</th><th>4th</th><th>Final</th><th>Status</th></tr></thead>
               <tbody id="myGradeTable"></tbody>
             </table>
           </div>
@@ -1068,10 +1170,19 @@
 
       <section id="studentSchedule" class="page hidden">
         <div class="panel">
-          <h3>Class Schedule</h3>
+          <div class="section-head">
+            <h3>Class Schedule</h3>
+            <div class="filters" style="margin:0;">
+              <select id="studentScheduleSemFilter" name="studentScheduleSemFilter" aria-label="Filter schedule by semester" onchange="renderStudentPortal()">
+                <option value="">All Semesters</option>
+                <option value="1st Sem">1st Sem</option>
+                <option value="2nd Sem">2nd Sem</option>
+              </select>
+            </div>
+          </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Subject</th><th>Day</th><th>Time</th><th>Room</th><th>Instructor</th></tr></thead>
+              <thead><tr><th>Subject</th><th>Semester</th><th>Day</th><th>Time</th><th>Room</th><th>Instructor</th></tr></thead>
               <tbody id="myScheduleTable"></tbody>
             </table>
           </div>
@@ -1091,8 +1202,17 @@
       <section id="studentReports" class="page hidden">
         <div class="panel">
           <div class="section-head">
-            <h3>My Official Reports</h3>
-            <small style="color:var(--text-muted);">View, print, or download your official student documents</small>
+            <div>
+              <h3>My Official Reports</h3>
+              <small style="color:var(--text-muted);">View, print, or download your official student documents</small>
+            </div>
+            <div class="filters" style="margin:0;">
+              <select id="studentReportSemFilter" name="studentReportSemFilter" aria-label="Filter student reports by semester">
+                <option value="">All Semesters</option>
+                <option value="1st Sem">1st Sem</option>
+                <option value="2nd Sem">2nd Sem</option>
+              </select>
+            </div>
           </div>
           <div class="report-list">
             <div class="report">
@@ -1261,7 +1381,8 @@
   <div id="toast" class="toast"></div>
 
   <!-- PDF Engine CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- PDF Engine CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
   <!-- Section-separated Scripts -->
   <script src="js/store.js"></script>

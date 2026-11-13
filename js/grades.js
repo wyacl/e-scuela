@@ -61,10 +61,16 @@ function handleGradeYearChange() {
   const year = $("gradeFilterYear")?.value || "";
   const isJHS = year !== "" && year !== "Grade 11" && year !== "Grade 12";
   const strandEl = $("gradeFilterStrand");
+  const semEl = $("gradeFilterSemester");
 
   if (strandEl) {
     strandEl.style.display = isJHS ? "none" : "";
     if (isJHS) strandEl.value = "";
+  }
+
+  if (semEl) {
+    semEl.style.display = isJHS ? "none" : "";
+    if (isJHS) semEl.value = "";
   }
 
   updateGradeSectionOptions();
@@ -107,23 +113,39 @@ function filterGradeStudents() {
   } else {
     el.disabled = true;
     el.innerHTML = `<option value="">No matching students</option>`;
-    $("gradeTable").innerHTML = `<tr><td colspan="7">No students found for this filter.</td></tr>`;
+    $("gradeTable").innerHTML = `<tr><td colspan="8">No students found for this filter.</td></tr>`;
   }
 }
 
 function renderGrades() {
   const id = $("gradeStudent")?.value;
   if (!id) return;
+
+  const s = data.students.find(x => x.id === id);
+  const semFilter = $("gradeFilterSemester")?.value || "";
   const arr = data.grades[id] || [];
-  $("gradeTable").innerHTML = arr.map((g, i) => {
+
+  const rows = arr
+    .map((g, originalIdx) => {
+      const sem = getSubjectSemester(g[0], s?.grade || "");
+      return { g, originalIdx, sem };
+    })
+    .filter(item => !semFilter || item.sem === semFilter);
+
+  $("gradeTable").innerHTML = rows.map(({ g, originalIdx, sem }) => {
     const finalScore = calc(g);
+    const semDisplay = sem !== "N/A"
+      ? `<span class="badge ${sem === "2nd Sem" ? "silver" : "enrolled"}">${esc(sem)}</span>`
+      : `<span style="color:var(--text-muted);font-size:12px;">N/A</span>`;
+
     return `<tr>
       <td><b>${esc(g[0])}</b></td>
-      ${[1, 2, 3, 4].map(j => `<td><input type="number" min="0" max="100" id="grade_${esc(id)}_${i}_q${j}" name="grade_${esc(id)}_${i}_q${j}" aria-label="${esc(g[0])} Quarter ${j}" value="${g[j] ?? ''}" data-idx="${i}" data-q="${j}" class="grade-input"></td>`).join("")}
+      <td>${semDisplay}</td>
+      ${[1, 2, 3, 4].map(j => `<td><input type="number" min="0" max="100" id="grade_${esc(id)}_${originalIdx}_q${j}" name="grade_${esc(id)}_${originalIdx}_q${j}" aria-label="${esc(g[0])} Quarter ${j}" value="${g[j] ?? ''}" data-idx="${originalIdx}" data-q="${j}" class="grade-input"></td>`).join("")}
       <td><b>${finalScore}</b></td>
       <td>${badge(statusOf(finalScore))}</td>
     </tr>`;
-  }).join("") || `<tr><td colspan="7">No subjects enrolled.</td></tr>`;
+  }).join("") || `<tr><td colspan="8">${arr.length ? "No subjects found for this semester." : "No subjects enrolled."}</td></tr>`;
 }
 
 function saveGrades() {

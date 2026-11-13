@@ -22,19 +22,29 @@ function closeAdminDeleteModal(e) {
   }
 }
 
+// Replace confirmAdminDelete() so it only handles subjects and schedules
 function confirmAdminDelete() {
   if (!pendingAdminDelete) return;
   const { type, id } = pendingAdminDelete;
   closeAdminDeleteModal();
 
-  if (type === "faculty") {
-    executeRemoveAdminFaculty(id);
-  } else if (type === "subject") {
+  if (type === "subject") {
     executeRemoveAdminSubject(id);
   } else if (type === "schedule") {
     executeRemoveAdminSchedule(id);
   }
 }
+
+// Helper for the 4 Faculty Account Status badges
+function getFacultyStatusBadge(status = "Active") {
+  const st = status || "Active";
+  if (st === "On Leave") return `<span class="badge irregular">On Leave</span>`;
+  if (st === "Inactive") return `<span class="badge silver">Inactive</span>`;
+  if (st === "Resigned") return `<span class="badge dropped">Resigned</span>`;
+  return `<span class="badge regular">Active</span>`;
+}
+
+
 
 // --------------------------------------------------
 // 1. FACULTY MEMBER MANAGEMENT
@@ -81,7 +91,7 @@ function resetAdminFacultyForm() {
   if ($("facNameInput")) $("facNameInput").value = "";
   if ($("facUsernameInput")) $("facUsernameInput").value = "";
   if ($("facPasswordInput")) $("facPasswordInput").value = "";
-  if ($("facDeptInput")) $("facDeptInput").value = "";
+  if ($("facDeptInput")) $("facDeptInput").value = "Elementary";
   if ($("facEmailInput")) $("facEmailInput").value = "";
   if ($("facContactInput")) $("facContactInput").value = "";
   if ($("facOfficeInput")) $("facOfficeInput").value = "";
@@ -105,7 +115,20 @@ function editAdminFaculty(facId) {
   if ($("facNameInput")) $("facNameInput").value = fac.name;
   if ($("facUsernameInput")) $("facUsernameInput").value = fac.username || "";
   if ($("facPasswordInput")) $("facPasswordInput").value = fac.password || "";
-  if ($("facDeptInput")) $("facDeptInput").value = fac.department || "";
+
+  if ($("facDeptInput")) {
+    const validDepts = ["Elementary", "Junior High School", "Senior High School"];
+    if (validDepts.includes(fac.department)) {
+      $("facDeptInput").value = fac.department;
+    } else if (/elementary/i.test(fac.department || "")) {
+      $("facDeptInput").value = "Elementary";
+    } else if (/junior/i.test(fac.department || "")) {
+      $("facDeptInput").value = "Junior High School";
+    } else {
+      $("facDeptInput").value = "Senior High School";
+    }
+  }
+
   if ($("facEmailInput")) $("facEmailInput").value = fac.email || "";
   if ($("facContactInput")) $("facContactInput").value = fac.contact || "";
   if ($("facOfficeInput")) $("facOfficeInput").value = fac.office || "";
@@ -124,7 +147,7 @@ function saveAdminFaculty() {
   const name = val("facNameInput");
   const username = val("facUsernameInput").toLowerCase();
   const password = val("facPasswordInput");
-  const department = val("facDeptInput") || "Academic Faculty";
+  const department = val("facDeptInput") || "Elementary";
   const email = val("facEmailInput") || `${username || "faculty"}@salette.edu.ph`;
   const contact = val("facContactInput") || "N/A";
   const office = val("facOfficeInput") || "Faculty Room";
@@ -242,22 +265,18 @@ function renderAdminFaculty() {
       `<span class="modal-pill" style="font-size:11px;padding:3px 8px;">${esc(sub)}</span>`
     ).join("") || `<span style="color:var(--text-muted);font-size:12px;">None</span>`;
 
-    const status = f.status || "Active";
-    const statusBadge = status === "Inactive"
-      ? `<span class="badge dropped">Inactive</span>`
-      : `<span class="badge regular">Active</span>`;
+    const statusBadge = getFacultyStatusBadge(f.status);
 
     return `
       <tr>
         <td><b>${esc(f.id)}</b></td>
         <td><b>${esc(f.name)}</b><br><small style="color:var(--text-muted);">${esc(f.email || "")}</small></td>
         <td><code>${esc(f.username)}</code></td>
-        <td>${esc(f.department || "Faculty")}</td>
+        <td>${esc(f.department || "Elementary")}</td>
         <td><div class="modal-pills" style="margin-top:0;">${subjectPills}</div></td>
         <td>${statusBadge}</td>
         <td style="white-space:nowrap;">
           <button class="secondary table-btn" onclick="editAdminFaculty('${esc(f.id)}')"><i class="fa-solid fa-pen-to-square fa-fw"></i> Edit</button>
-          <button class="secondary table-btn" style="color:var(--primary);margin-left:4px;" onclick="promptRemoveAdminFaculty('${esc(f.id)}')"><i class="fa-solid fa-trash fa-fw"></i> Remove</button>
         </td>
       </tr>
     `;
@@ -265,8 +284,20 @@ function renderAdminFaculty() {
 }
 
 // --------------------------------------------------
-// 2. SUBJECTS & GRADE-LEVEL / STRAND MANAGEMENT
+// 2. SUBJECTS & GRADE-LEVEL / STRAND / SEMESTER MANAGEMENT
 // --------------------------------------------------
+function updateSubjectShsFieldsVisibility() {
+  const checkedGrades = Array.from(
+    document.querySelectorAll("input[name='subGradeLevel']:checked")
+  ).map(cb => cb.value);
+
+  const hasSHS = checkedGrades.includes("Grade 11") || checkedGrades.includes("Grade 12");
+  const showShsFields = checkedGrades.length === 0 || hasSHS;
+
+  if ($("subStrandGroup")) $("subStrandGroup").style.display = showShsFields ? "" : "none";
+  if ($("subSemesterGroup")) $("subSemesterGroup").style.display = showShsFields ? "" : "none";
+}
+
 function renderSubjectGradeCheckboxes(selectedGrades = []) {
   const container = $("subGradeCheckboxes");
   if (!container) return;
@@ -275,11 +306,13 @@ function renderSubjectGradeCheckboxes(selectedGrades = []) {
     const checked = selectedGrades.includes(g) ? "checked" : "";
     return `
       <label class="subject-checkbox-label">
-        <input type="checkbox" name="subGradeLevel" value="${esc(g)}" ${checked}>
+        <input type="checkbox" name="subGradeLevel" value="${esc(g)}" ${checked} onchange="updateSubjectShsFieldsVisibility()">
         <span>${esc(g)}</span>
       </label>
     `;
   }).join("");
+
+  updateSubjectShsFieldsVisibility();
 }
 
 function renderSubjectStrandCheckboxes(selectedStrands = ["ABM", "HUMSS"]) {
@@ -308,12 +341,14 @@ function selectSubjectGradePreset(preset) {
     else if (preset === "jhs") cb.checked = gradeNum >= 7 && gradeNum <= 10;
     else if (preset === "shs") cb.checked = gradeNum >= 11 && gradeNum <= 12;
   });
+  updateSubjectShsFieldsVisibility();
 }
 
 function resetAdminSubjectForm() {
   if ($("subEditId")) $("subEditId").value = "";
   if ($("subFormTitle")) $("subFormTitle").textContent = "Add Subject & Grade Assignment";
   if ($("subNameInput")) $("subNameInput").value = "";
+  if ($("subSemesterInput")) $("subSemesterInput").value = "1st Sem";
   if ($("subSaveBtn")) $("subSaveBtn").innerHTML = `<i class="fa-solid fa-plus fa-fw"></i> Save Subject`;
   $("subCancelEditBtn")?.classList.add("hidden");
   renderSubjectGradeCheckboxes([]);
@@ -327,6 +362,9 @@ function editAdminSubject(subId) {
   if ($("subEditId")) $("subEditId").value = sub.id;
   if ($("subFormTitle")) $("subFormTitle").textContent = `Edit Subject Assignment — ${sub.name}`;
   if ($("subNameInput")) $("subNameInput").value = sub.name;
+  if ($("subSemesterInput")) {
+    $("subSemesterInput").value = (sub.semester && sub.semester !== "N/A") ? sub.semester : "1st Sem";
+  }
   if ($("subSaveBtn")) $("subSaveBtn").innerHTML = `<i class="fa-solid fa-floppy-disk fa-fw"></i> Update Subject`;
   $("subCancelEditBtn")?.classList.remove("hidden");
 
@@ -359,6 +397,7 @@ function saveAdminSubject() {
   }
 
   const assignedStrands = hasSHS ? checkedStrands : [];
+  const assignedSemester = hasSHS ? (val("subSemesterInput") || "1st Sem") : "N/A";
 
   if (!Array.isArray(data.subjects)) data.subjects = [];
 
@@ -370,16 +409,22 @@ function saveAdminSubject() {
         ...data.subjects[idx],
         name,
         gradeLevels: assignedGrades,
-        strands: assignedStrands
+        strands: assignedStrands,
+        semester: assignedSemester
       };
-      if (oldName !== name) {
-        (data.facultyList || []).forEach(f => {
+      (data.facultyList || []).forEach(f => {
+        if (oldName !== name) {
           f.subjects = (f.subjects || []).map(s => s === oldName ? name : s);
-        });
-        (data.schedules || []).forEach(sch => {
-          if (sch.subject === oldName) sch.subject = name;
-        });
-      }
+        }
+      });
+      (data.schedules || []).forEach(sch => {
+        if (sch.subject === oldName) {
+          sch.subject = name;
+          if (sch.grade === "Grade 11" || sch.grade === "Grade 12") {
+            sch.semester = assignedSemester;
+          }
+        }
+      });
     }
     toast(`Updated subject: ${name}`);
   } else {
@@ -388,13 +433,15 @@ function saveAdminSubject() {
       existing.gradeLevels = Array.from(new Set([...(existing.gradeLevels || []), ...assignedGrades]))
         .sort((a, b) => gradeLevels.indexOf(a) - gradeLevels.indexOf(b));
       existing.strands = Array.from(new Set([...(existing.strands || []), ...assignedStrands]));
+      existing.semester = assignedSemester;
       toast(`Updated assignments for ${existing.name}`);
     } else {
       data.subjects.push({
         id: `SUB-${Date.now().toString().slice(-4)}`,
         name,
         gradeLevels: assignedGrades,
-        strands: assignedStrands
+        strands: assignedStrands,
+        semester: assignedSemester
       });
       toast(`Added subject: ${name}`);
     }
@@ -455,6 +502,7 @@ function renderAdminSubjects() {
     const grades = sub.gradeLevels || [];
     const hasSHS = grades.includes("Grade 11") || grades.includes("Grade 12");
     const strands = Array.isArray(sub.strands) ? sub.strands : [];
+    const semester = sub.semester || (hasSHS ? "1st Sem" : "N/A");
 
     const gradeDisplay = grades.length === gradeLevels.length
       ? `<span class="badge enrolled">All Levels (Grade 1–12)</span>`
@@ -469,18 +517,23 @@ function renderAdminSubjects() {
       }
     }
 
+    const semesterDisplay = hasSHS
+      ? `<span class="badge ${semester === "2nd Sem" ? "silver" : "enrolled"}">${esc(semester)}</span>`
+      : `<span style="color:var(--text-muted);font-size:12px;">N/A</span>`;
+
     return `
       <tr>
         <td><b>${esc(sub.name)}</b></td>
         <td>${gradeDisplay}</td>
         <td>${strandDisplay}</td>
+        <td>${semesterDisplay}</td>
         <td style="white-space:nowrap;">
           <button class="secondary table-btn" onclick="editAdminSubject('${esc(sub.id)}')"><i class="fa-solid fa-pen-to-square fa-fw"></i> Edit</button>
           <button class="secondary table-btn" style="color:var(--primary);margin-left:4px;" onclick="promptRemoveAdminSubject('${esc(sub.id)}')"><i class="fa-solid fa-trash fa-fw"></i> Remove</button>
         </td>
       </tr>
     `;
-  }).join("") || `<tr><td colspan="4">No subjects configured.</td></tr>`;
+  }).join("") || `<tr><td colspan="5">No subjects configured.</td></tr>`;
 }
 
 // --------------------------------------------------
@@ -539,22 +592,29 @@ function onScheduleFacultyChange() {
   const fac = (data.facultyList || []).find(f => f.id === facId);
   const gradeSel = $("schGrade");
   const strandSel = $("schStrand");
+  const semSel = $("schSemester");
 
   if (fac && Array.isArray(fac.subjects) && fac.subjects.length && gradeSel) {
     const currentGrade = gradeSel.value || "Grade 12";
     const isSHS = currentGrade === "Grade 11" || currentGrade === "Grade 12";
     const currentStrand = isSHS ? (strandSel?.value || "ABM") : "";
-    const currentGradeSubs = getSubjectsForGrade(currentGrade, currentStrand);
+    const currentSem = isSHS ? (semSel?.value || "1st Sem") : "";
+    const currentGradeSubs = getSubjectsForGrade(currentGrade, currentStrand, currentSem);
 
     const matchesCurrent = fac.subjects.filter(sub => currentGradeSubs.includes(sub));
 
-    // If this faculty member teaches a different grade level, auto-sync Grade Level & Strand to match
+    // If this faculty member teaches a different grade level / strand / semester, auto-sync to match
     if (!matchesCurrent.length) {
       const firstSubObj = (data.subjects || []).find(s => fac.subjects.includes(s.name) && Array.isArray(s.gradeLevels) && s.gradeLevels.length);
       if (firstSubObj) {
         gradeSel.value = firstSubObj.gradeLevels[0];
-        if ((firstSubObj.gradeLevels[0] === "Grade 11" || firstSubObj.gradeLevels[0] === "Grade 12") && strandSel && Array.isArray(firstSubObj.strands) && firstSubObj.strands.length) {
-          strandSel.value = firstSubObj.strands[0];
+        if (firstSubObj.gradeLevels[0] === "Grade 11" || firstSubObj.gradeLevels[0] === "Grade 12") {
+          if (strandSel && Array.isArray(firstSubObj.strands) && firstSubObj.strands.length) {
+            strandSel.value = firstSubObj.strands[0];
+          }
+          if (semSel && firstSubObj.semester && firstSubObj.semester !== "N/A") {
+            semSel.value = firstSubObj.semester;
+          }
         }
       }
     }
@@ -587,6 +647,9 @@ function onScheduleStudentChange() {
     const prefix = s.section.split("-")[0];
     if (shsStrands.includes(prefix)) $("schStrand").value = prefix;
   }
+  if ($("schSemester") && enr?.semester && enr.semester !== "N/A") {
+    $("schSemester").value = enr.semester;
+  }
   updateScheduleSectionFields();
   if ($("schSection") && s.section && !s.section.startsWith("Pending")) {
     $("schSection").value = s.section;
@@ -597,9 +660,12 @@ function updateScheduleSectionFields(preferredSubject = "") {
   const grade = $("schGrade")?.value || "Grade 1";
   const isSHS = grade === "Grade 11" || grade === "Grade 12";
   const strandField = $("schStrandField");
+  const semField = $("schSemesterField");
   if (strandField) strandField.style.display = isSHS ? "" : "none";
+  if (semField) semField.style.display = isSHS ? "" : "none";
 
   const strand = isSHS ? ($("schStrand")?.value || "ABM") : "";
+  const semester = isSHS ? ($("schSemester")?.value || "1st Sem") : "";
   const secSel = $("schSection");
   if (secSel) {
     const oldSec = secSel.value;
@@ -617,20 +683,20 @@ function updateScheduleSectionFields(preferredSubject = "") {
     }
   }
 
-  // Sync Subject options (and matching Faculty Member) to the selected Grade Level & Strand
+  // Sync Subject options (and matching Faculty Member) to the selected Grade Level, Strand & Semester
   const subSel = $("schSubject");
   const facSel = $("schFaculty");
   if (!subSel) return;
 
   const prevSub = preferredSubject || subSel.value;
-  const gradeSubjects = getSubjectsForGrade(grade, strand);
+  const gradeSubjects = getSubjectsForGrade(grade, strand, semester);
   let fac = (data.facultyList || []).find(f => f.id === facSel?.value);
 
   let validSubjects = fac && Array.isArray(fac.subjects)
     ? fac.subjects.filter(sub => gradeSubjects.includes(sub))
     : [];
 
-  // If the selected faculty has no subjects assigned to this grade/strand, switch to a matching faculty
+  // If the selected faculty has no subjects assigned to this grade/strand/semester, switch to a matching faculty
   if (!validSubjects.length && gradeSubjects.length) {
     const matchingFac = (data.facultyList || []).find(f =>
       Array.isArray(f.subjects) && f.subjects.some(sub => gradeSubjects.includes(sub))
@@ -640,7 +706,6 @@ function updateScheduleSectionFields(preferredSubject = "") {
       fac = matchingFac;
       validSubjects = matchingFac.subjects.filter(sub => gradeSubjects.includes(sub));
     } else {
-      // Fallback: show all curriculum subjects for this grade/strand
       validSubjects = gradeSubjects;
     }
   }
@@ -653,7 +718,8 @@ function updateScheduleSectionFields(preferredSubject = "") {
       subSel.value = prevSub;
     }
   } else {
-    subSel.innerHTML = `<option value="">No subjects assigned to ${esc(grade)}</option>`;
+    const semText = isSHS ? ` (${semester})` : "";
+    subSel.innerHTML = `<option value="">No subjects assigned to ${esc(grade)}${esc(semText)}</option>`;
   }
 }
 
@@ -672,7 +738,7 @@ function saveAdminSchedule() {
   if (!fac) return toast("Please select a faculty member.");
 
   const subject = val("schSubject");
-  if (!subject) return toast("Please select a valid subject for this grade level.");
+  if (!subject) return toast("Please select a valid subject for this grade level and semester.");
 
   const targetType = val("schTargetType") || "section";
   const studentId = targetType === "student" ? val("schStudent") : "";
@@ -683,6 +749,7 @@ function saveAdminSchedule() {
   const grade = val("schGrade") || "Grade 1";
   const isSHS = grade === "Grade 11" || grade === "Grade 12";
   const strand = isSHS ? (val("schStrand") || "ABM") : "N/A";
+  const semester = isSHS ? (val("schSemester") || "1st Sem") : "N/A";
   const section = val("schSection") || (isSHS ? `${strand}-A` : "Section A");
   const day = val("schDay") || "Monday";
   const startTime = val("schStartTime");
@@ -708,6 +775,7 @@ function saveAdminSchedule() {
     studentId,
     grade,
     strand,
+    semester,
     section,
     subject,
     day,
@@ -750,12 +818,19 @@ function renderAdminSchedules() {
 
   const fFac = $("schFilterFaculty")?.value || "";
   const fGrade = $("schFilterGrade")?.value || "";
+  const fSem = $("schFilterSemester")?.value || "";
   const tbody = $("adminScheduleTable");
   if (!tbody) return;
 
   const filtered = (data.schedules || []).filter(sch => {
     if (fFac && sch.facultyId !== fFac) return false;
     if (fGrade && sch.grade !== fGrade) return false;
+    if (fSem) {
+      const schSem = sch.semester && sch.semester !== "N/A"
+        ? sch.semester
+        : getSubjectSemester(sch.subject, sch.grade);
+      if (schSem !== fSem) return false;
+    }
     return true;
   });
 
@@ -766,11 +841,20 @@ function renderAdminSchedules() {
       targetLabel = `<span class="badge gold">Student</span> ${esc(stu ? formatNameId(stu) : sch.studentId)}`;
     }
 
+    const isSHS = sch.grade === "Grade 11" || sch.grade === "Grade 12";
+    const schSem = isSHS
+      ? (sch.semester && sch.semester !== "N/A" ? sch.semester : getSubjectSemester(sch.subject, sch.grade))
+      : "N/A";
+    const semBadge = isSHS
+      ? `<span class="badge ${schSem === "2nd Sem" ? "silver" : "enrolled"}">${esc(schSem)}</span>`
+      : `<span style="color:var(--text-muted);font-size:12px;">N/A</span>`;
+
     return `
       <tr>
         <td><b>${esc(sch.facultyName)}</b><br><small style="color:var(--text-muted);">${esc(sch.facultyId)}</small></td>
         <td><b>${esc(sch.subject)}</b></td>
         <td>${targetLabel}</td>
+        <td>${semBadge}</td>
         <td>${esc(sch.day)}</td>
         <td>${esc(sch.time)}</td>
         <td>${esc(sch.room)}</td>
@@ -779,7 +863,7 @@ function renderAdminSchedules() {
         </td>
       </tr>
     `;
-  }).join("") || `<tr><td colspan="7">No class schedules found.</td></tr>`;
+  }).join("") || `<tr><td colspan="8">No class schedules found.</td></tr>`;
 }
 
 // --------------------------------------------------
@@ -798,20 +882,14 @@ function renderUsersTable() {
     </tr>
   `;
 
-  const facultyRows = (data.facultyList || []).map(f => {
-    const status = f.status || "Active";
-    const statusBadge = status === "Inactive"
-      ? `<span class="badge dropped">Inactive</span>`
-      : `<span class="badge regular">Active</span>`;
-    return `
-      <tr>
-        <td>${esc(f.username)}</td>
-        <td>${esc(f.name)}</td>
-        <td>Faculty</td>
-        <td>${statusBadge}</td>
-      </tr>
-    `;
-  }).join("");
+  const facultyRows = (data.facultyList || []).map(f => `
+    <tr>
+      <td>${esc(f.username)}</td>
+      <td>${esc(f.name)}</td>
+      <td>Faculty</td>
+      <td>${getFacultyStatusBadge(f.status)}</td>
+    </tr>
+  `).join("");
 
   tbody.innerHTML = adminRow + facultyRows;
 }

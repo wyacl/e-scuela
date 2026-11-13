@@ -6,6 +6,16 @@ const esc = str => String(str ?? "").replace(/[&<>'"]/g, t => ({
 // Standard format: Name (ID Number)
 const formatNameId = s => s ? `${s.name} (${s.id})` : "";
 
+// Normalize semester labels to "1st Sem" / "2nd Sem" (or "N/A" for Grades 1-10)
+function normalizeSemester(sem, isSHS = true) {
+  if (!isSHS) return "N/A";
+  const s = String(sem || "").trim().toLowerCase();
+  if (!s || s === "n/a") return "1st Sem";
+  if (s.startsWith("2")) return "2nd Sem";
+  if (s.startsWith("1")) return "1st Sem";
+  return sem;
+}
+
 // Student factory: Default status set to "Enrolled"
 const S = (id, name, grade, section, status = "Enrolled") => ({
   id,
@@ -21,56 +31,57 @@ const S = (id, name, grade, section, status = "Enrolled") => ({
 
 const gradeLevels = Array.from({ length: 12 }, (_, i) => `Grade ${i + 1}`);
 const shsStrands = ["ABM", "HUMSS"];
+const shsSemesters = ["1st Sem", "2nd Sem"];
 
 const defaultSubjects = [
   // Grades 1 to 10 Shared & Level-Specific Subjects
-  { id: "SUB-01", name: "English", gradeLevels: ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10"], strands: [] },
-  { id: "SUB-02", name: "Filipino", gradeLevels: ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10"], strands: [] },
-  { id: "SUB-03", name: "Math", gradeLevels: ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6"], strands: [] },
-  { id: "SUB-04", name: "Mathematics", gradeLevels: ["Grade 7", "Grade 8", "Grade 9", "Grade 10"], strands: [] },
-  { id: "SUB-05", name: "Science", gradeLevels: ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10"], strands: [] },
-  { id: "SUB-06", name: "Makabansa", gradeLevels: ["Grade 1", "Grade 2", "Grade 3"], strands: [] },
-  { id: "SUB-07", name: "GMRC", gradeLevels: ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6"], strands: [] },
-  { id: "SUB-08", name: "Araling Panlipunan", gradeLevels: ["Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10"], strands: [] },
-  { id: "SUB-09", name: "EPP", gradeLevels: ["Grade 4", "Grade 5", "Grade 6"], strands: [] },
-  { id: "SUB-10", name: "MAPEH", gradeLevels: ["Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10"], strands: [] },
-  { id: "SUB-11", name: "TLE", gradeLevels: ["Grade 7", "Grade 8", "Grade 9", "Grade 10"], strands: [] },
+  { id: "SUB-01", name: "English", gradeLevels: ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10"], strands: [], semester: "N/A" },
+  { id: "SUB-02", name: "Filipino", gradeLevels: ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10"], strands: [], semester: "N/A" },
+  { id: "SUB-03", name: "Math", gradeLevels: ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6"], strands: [], semester: "N/A" },
+  { id: "SUB-04", name: "Mathematics", gradeLevels: ["Grade 7", "Grade 8", "Grade 9", "Grade 10"], strands: [], semester: "N/A" },
+  { id: "SUB-05", name: "Science", gradeLevels: ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10"], strands: [], semester: "N/A" },
+  { id: "SUB-06", name: "Makabansa", gradeLevels: ["Grade 1", "Grade 2", "Grade 3"], strands: [], semester: "N/A" },
+  { id: "SUB-07", name: "GMRC", gradeLevels: ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6"], strands: [], semester: "N/A" },
+  { id: "SUB-08", name: "Araling Panlipunan", gradeLevels: ["Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10"], strands: [], semester: "N/A" },
+  { id: "SUB-09", name: "EPP", gradeLevels: ["Grade 4", "Grade 5", "Grade 6"], strands: [], semester: "N/A" },
+  { id: "SUB-10", name: "MAPEH", gradeLevels: ["Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10"], strands: [], semester: "N/A" },
+  { id: "SUB-11", name: "TLE", gradeLevels: ["Grade 7", "Grade 8", "Grade 9", "Grade 10"], strands: [], semester: "N/A" },
 
   // Grade 11 (Both Strands: ABM & HUMSS)
-  { id: "SUB-12", name: "Oral Communication", gradeLevels: ["Grade 11"], strands: ["ABM", "HUMSS"] },
-  { id: "SUB-13", name: "General Mathematics", gradeLevels: ["Grade 11"], strands: ["ABM", "HUMSS"] },
+  { id: "SUB-12", name: "Oral Communication", gradeLevels: ["Grade 11"], strands: ["ABM", "HUMSS"], semester: "1st Sem" },
+  { id: "SUB-13", name: "General Mathematics", gradeLevels: ["Grade 11"], strands: ["ABM", "HUMSS"], semester: "1st Sem" },
 
   // Grade 11 (ABM)
-  { id: "SUB-14", name: "Business Mathematics", gradeLevels: ["Grade 11"], strands: ["ABM"] },
-  { id: "SUB-15", name: "Organization and Management", gradeLevels: ["Grade 11"], strands: ["ABM"] },
-  { id: "SUB-16", name: "FABM 1", gradeLevels: ["Grade 11"], strands: ["ABM"] },
-  { id: "SUB-17", name: "Principles of Marketing", gradeLevels: ["Grade 11"], strands: ["ABM"] },
+  { id: "SUB-14", name: "Business Mathematics", gradeLevels: ["Grade 11"], strands: ["ABM"], semester: "1st Sem" },
+  { id: "SUB-15", name: "Organization and Management", gradeLevels: ["Grade 11"], strands: ["ABM"], semester: "1st Sem" },
+  { id: "SUB-16", name: "FABM 1", gradeLevels: ["Grade 11"], strands: ["ABM"], semester: "2nd Sem" },
+  { id: "SUB-17", name: "Principles of Marketing", gradeLevels: ["Grade 11"], strands: ["ABM"], semester: "2nd Sem" },
 
   // Grade 11 (HUMSS)
-  { id: "SUB-18", name: "Disciplines and Ideas in the Social Sciences", gradeLevels: ["Grade 11"], strands: ["HUMSS"] },
-  { id: "SUB-19", name: "Creative Writing", gradeLevels: ["Grade 11"], strands: ["HUMSS"] },
-  { id: "SUB-20", name: "World Religions", gradeLevels: ["Grade 11"], strands: ["HUMSS"] },
-  { id: "SUB-21", name: "Philippine Politics", gradeLevels: ["Grade 11"], strands: ["HUMSS"] },
+  { id: "SUB-18", name: "Disciplines and Ideas in the Social Sciences", gradeLevels: ["Grade 11"], strands: ["HUMSS"], semester: "1st Sem" },
+  { id: "SUB-19", name: "Creative Writing", gradeLevels: ["Grade 11"], strands: ["HUMSS"], semester: "1st Sem" },
+  { id: "SUB-20", name: "World Religions", gradeLevels: ["Grade 11"], strands: ["HUMSS"], semester: "2nd Sem" },
+  { id: "SUB-21", name: "Philippine Politics", gradeLevels: ["Grade 11"], strands: ["HUMSS"], semester: "2nd Sem" },
 
   // Grade 12 (Both Strands: ABM & HUMSS)
-  { id: "SUB-22", name: "21st Century Literature", gradeLevels: ["Grade 12"], strands: ["ABM", "HUMSS"] },
-  { id: "SUB-23", name: "Media and Information Literacy", gradeLevels: ["Grade 12"], strands: ["ABM", "HUMSS"] },
-  { id: "SUB-24", name: "Research 2", gradeLevels: ["Grade 12"], strands: ["ABM", "HUMSS"] },
-  { id: "SUB-25", name: "3Is", gradeLevels: ["Grade 12"], strands: ["ABM", "HUMSS"] },
-  { id: "SUB-26", name: "Entrepreneurship", gradeLevels: ["Grade 12"], strands: ["ABM", "HUMSS"] },
-  { id: "SUB-27", name: "Work Immersion", gradeLevels: ["Grade 12"], strands: ["ABM", "HUMSS"] },
+  { id: "SUB-22", name: "21st Century Literature", gradeLevels: ["Grade 12"], strands: ["ABM", "HUMSS"], semester: "1st Sem" },
+  { id: "SUB-23", name: "Media and Information Literacy", gradeLevels: ["Grade 12"], strands: ["ABM", "HUMSS"], semester: "1st Sem" },
+  { id: "SUB-24", name: "Research 2", gradeLevels: ["Grade 12"], strands: ["ABM", "HUMSS"], semester: "2nd Sem" },
+  { id: "SUB-25", name: "3Is", gradeLevels: ["Grade 12"], strands: ["ABM", "HUMSS"], semester: "2nd Sem" },
+  { id: "SUB-26", name: "Entrepreneurship", gradeLevels: ["Grade 12"], strands: ["ABM", "HUMSS"], semester: "2nd Sem" },
+  { id: "SUB-27", name: "Work Immersion", gradeLevels: ["Grade 12"], strands: ["ABM", "HUMSS"], semester: "2nd Sem" },
 
   // Grade 12 (ABM)
-  { id: "SUB-28", name: "FABM 2", gradeLevels: ["Grade 12"], strands: ["ABM"] },
-  { id: "SUB-29", name: "Business Finance", gradeLevels: ["Grade 12"], strands: ["ABM"] },
-  { id: "SUB-30", name: "Applied Economics", gradeLevels: ["Grade 12"], strands: ["ABM"] },
-  { id: "SUB-31", name: "Business Ethics", gradeLevels: ["Grade 12"], strands: ["ABM"] },
+  { id: "SUB-28", name: "FABM 2", gradeLevels: ["Grade 12"], strands: ["ABM"], semester: "1st Sem" },
+  { id: "SUB-29", name: "Business Finance", gradeLevels: ["Grade 12"], strands: ["ABM"], semester: "1st Sem" },
+  { id: "SUB-30", name: "Applied Economics", gradeLevels: ["Grade 12"], strands: ["ABM"], semester: "2nd Sem" },
+  { id: "SUB-31", name: "Business Ethics", gradeLevels: ["Grade 12"], strands: ["ABM"], semester: "2nd Sem" },
 
   // Grade 12 (HUMSS)
-  { id: "SUB-32", name: "DIASS", gradeLevels: ["Grade 12"], strands: ["HUMSS"] },
-  { id: "SUB-33", name: "Creative Nonfiction", gradeLevels: ["Grade 12"], strands: ["HUMSS"] },
-  { id: "SUB-34", name: "Trends and Networks", gradeLevels: ["Grade 12"], strands: ["HUMSS"] },
-  { id: "SUB-35", name: "CESC", gradeLevels: ["Grade 12"], strands: ["HUMSS"] }
+  { id: "SUB-32", name: "DIASS", gradeLevels: ["Grade 12"], strands: ["HUMSS"], semester: "1st Sem" },
+  { id: "SUB-33", name: "Creative Nonfiction", gradeLevels: ["Grade 12"], strands: ["HUMSS"], semester: "1st Sem" },
+  { id: "SUB-34", name: "Trends and Networks", gradeLevels: ["Grade 12"], strands: ["HUMSS"], semester: "2nd Sem" },
+  { id: "SUB-35", name: "CESC", gradeLevels: ["Grade 12"], strands: ["HUMSS"], semester: "2nd Sem" }
 ];
 
 const defaultFacultyList = [
@@ -79,7 +90,7 @@ const defaultFacultyList = [
     username: "salette.maria",
     password: "maria123",
     name: "Prof. Maria Santos",
-    department: "Senior High School - Research & Core",
+    department: "Senior High School",
     email: "m.santos@salette.edu.ph",
     contact: "0917-555-0199",
     office: "Faculty Room 204, St. Joseph Hall",
@@ -91,7 +102,7 @@ const defaultFacultyList = [
     username: "juan.reyes",
     password: "reyes123",
     name: "Mr. Juan Reyes",
-    department: "Languages & Literature",
+    department: "Senior High School",
     email: "j.reyes@salette.edu.ph",
     contact: "0917-555-0142",
     office: "Faculty Room 201",
@@ -103,7 +114,7 @@ const defaultFacultyList = [
     username: "elena.cruz",
     password: "cruz123",
     name: "Ms. Elena Cruz",
-    department: "Mathematics & Science",
+    department: "Junior High School",
     email: "e.cruz@salette.edu.ph",
     contact: "0917-555-0188",
     office: "Science Faculty Room",
@@ -115,7 +126,7 @@ const defaultFacultyList = [
     username: "ricardo.dalisay",
     password: "dalisay123",
     name: "Mr. Ricardo Dalisay",
-    department: "Accountancy, Business & Management (ABM)",
+    department: "Senior High School",
     email: "r.dalisay@salette.edu.ph",
     contact: "0917-555-0164",
     office: "Faculty Room 203, St. Joseph Hall",
@@ -127,7 +138,7 @@ const defaultFacultyList = [
     username: "angelica.mendoza",
     password: "mendoza123",
     name: "Ms. Angelica Mendoza",
-    department: "Humanities & Social Sciences (HUMSS)",
+    department: "Senior High School",
     email: "a.mendoza@salette.edu.ph",
     contact: "0917-555-0175",
     office: "Faculty Room 202",
@@ -139,7 +150,7 @@ const defaultFacultyList = [
     username: "gabriel.perez",
     password: "perez123",
     name: "Coach Gabriel Perez",
-    department: "MAPEH, EPP & Technical-Vocational",
+    department: "Elementary",
     email: "g.perez@salette.edu.ph",
     contact: "0917-555-0153",
     office: "Gymnasium Faculty Office",
@@ -149,58 +160,58 @@ const defaultFacultyList = [
 ];
 
 const defaultSchedules = [
-  // ==================== GRADE 12 - ABM-A (10 SUBJECTS) ====================
-  { id: "SCH-001", facultyId: "FAC-2026-02", facultyName: "Mr. Juan Reyes", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", section: "ABM-A", subject: "21st Century Literature", day: "Monday", time: "8:00 AM - 9:00 AM", room: "Room 301" },
-  { id: "SCH-002", facultyId: "FAC-2026-01", facultyName: "Prof. Maria Santos", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", section: "ABM-A", subject: "Media and Information Literacy", day: "Monday", time: "9:00 AM - 10:00 AM", room: "Computer Lab 1" },
-  { id: "SCH-003", facultyId: "FAC-2026-04", facultyName: "Mr. Ricardo Dalisay", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", section: "ABM-A", subject: "FABM 2", day: "Monday", time: "10:30 AM - 11:30 AM", room: "Room 301" },
-  { id: "SCH-004", facultyId: "FAC-2026-04", facultyName: "Mr. Ricardo Dalisay", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", section: "ABM-A", subject: "Business Finance", day: "Tuesday", time: "8:00 AM - 9:00 AM", room: "Room 301" },
-  { id: "SCH-005", facultyId: "FAC-2026-04", facultyName: "Mr. Ricardo Dalisay", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", section: "ABM-A", subject: "Entrepreneurship", day: "Tuesday", time: "9:00 AM - 10:00 AM", room: "Room 301" },
-  { id: "SCH-006", facultyId: "FAC-2026-01", facultyName: "Prof. Maria Santos", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", section: "ABM-A", subject: "3Is", day: "Tuesday", time: "10:30 AM - 11:30 AM", room: "Computer Lab 2" },
-  { id: "SCH-007", facultyId: "FAC-2026-04", facultyName: "Mr. Ricardo Dalisay", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", section: "ABM-A", subject: "Applied Economics", day: "Wednesday", time: "8:00 AM - 9:00 AM", room: "Room 301" },
-  { id: "SCH-008", facultyId: "FAC-2026-04", facultyName: "Mr. Ricardo Dalisay", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", section: "ABM-A", subject: "Business Ethics", day: "Wednesday", time: "9:00 AM - 10:00 AM", room: "Room 301" },
-  { id: "SCH-009", facultyId: "FAC-2026-01", facultyName: "Prof. Maria Santos", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", section: "ABM-A", subject: "Research 2", day: "Wednesday", time: "1:00 PM - 2:00 PM", room: "Computer Lab 2" },
-  { id: "SCH-010", facultyId: "FAC-2026-01", facultyName: "Prof. Maria Santos", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", section: "ABM-A", subject: "Work Immersion", day: "Friday", time: "1:00 PM - 3:00 PM", room: "SHS Immersion Room" },
+  // ==================== GRADE 12 - ABM-A (1ST & 2ND SEM) ====================
+  { id: "SCH-001", facultyId: "FAC-2026-02", facultyName: "Mr. Juan Reyes", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", semester: "1st Sem", section: "ABM-A", subject: "21st Century Literature", day: "Monday", time: "8:00 AM - 9:00 AM", room: "Room 301" },
+  { id: "SCH-002", facultyId: "FAC-2026-01", facultyName: "Prof. Maria Santos", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", semester: "1st Sem", section: "ABM-A", subject: "Media and Information Literacy", day: "Monday", time: "9:00 AM - 10:00 AM", room: "Computer Lab 1" },
+  { id: "SCH-003", facultyId: "FAC-2026-04", facultyName: "Mr. Ricardo Dalisay", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", semester: "1st Sem", section: "ABM-A", subject: "FABM 2", day: "Monday", time: "10:30 AM - 11:30 AM", room: "Room 301" },
+  { id: "SCH-004", facultyId: "FAC-2026-04", facultyName: "Mr. Ricardo Dalisay", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", semester: "1st Sem", section: "ABM-A", subject: "Business Finance", day: "Tuesday", time: "8:00 AM - 9:00 AM", room: "Room 301" },
+  { id: "SCH-005", facultyId: "FAC-2026-04", facultyName: "Mr. Ricardo Dalisay", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", semester: "2nd Sem", section: "ABM-A", subject: "Entrepreneurship", day: "Tuesday", time: "9:00 AM - 10:00 AM", room: "Room 301" },
+  { id: "SCH-006", facultyId: "FAC-2026-01", facultyName: "Prof. Maria Santos", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", semester: "2nd Sem", section: "ABM-A", subject: "3Is", day: "Tuesday", time: "10:30 AM - 11:30 AM", room: "Computer Lab 2" },
+  { id: "SCH-007", facultyId: "FAC-2026-04", facultyName: "Mr. Ricardo Dalisay", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", semester: "2nd Sem", section: "ABM-A", subject: "Applied Economics", day: "Wednesday", time: "8:00 AM - 9:00 AM", room: "Room 301" },
+  { id: "SCH-008", facultyId: "FAC-2026-04", facultyName: "Mr. Ricardo Dalisay", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", semester: "2nd Sem", section: "ABM-A", subject: "Business Ethics", day: "Wednesday", time: "9:00 AM - 10:00 AM", room: "Room 301" },
+  { id: "SCH-009", facultyId: "FAC-2026-01", facultyName: "Prof. Maria Santos", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", semester: "2nd Sem", section: "ABM-A", subject: "Research 2", day: "Wednesday", time: "1:00 PM - 2:00 PM", room: "Computer Lab 2" },
+  { id: "SCH-010", facultyId: "FAC-2026-01", facultyName: "Prof. Maria Santos", targetType: "section", studentId: "", grade: "Grade 12", strand: "ABM", semester: "2nd Sem", section: "ABM-A", subject: "Work Immersion", day: "Friday", time: "1:00 PM - 3:00 PM", room: "SHS Immersion Room" },
 
-  // ==================== GRADE 11 - ABM-A (6 SUBJECTS) ====================
-  { id: "SCH-011", facultyId: "FAC-2026-03", facultyName: "Ms. Elena Cruz", targetType: "section", studentId: "", grade: "Grade 11", strand: "ABM", section: "ABM-A", subject: "General Mathematics", day: "Monday", time: "8:00 AM - 9:00 AM", room: "Room 201" },
-  { id: "SCH-012", facultyId: "FAC-2026-02", facultyName: "Mr. Juan Reyes", targetType: "section", studentId: "", grade: "Grade 11", strand: "ABM", section: "ABM-A", subject: "Oral Communication", day: "Monday", time: "9:00 AM - 10:00 AM", room: "Room 201" },
-  { id: "SCH-013", facultyId: "FAC-2026-03", facultyName: "Ms. Elena Cruz", targetType: "section", studentId: "", grade: "Grade 11", strand: "ABM", section: "ABM-A", subject: "Business Mathematics", day: "Tuesday", time: "8:00 AM - 9:00 AM", room: "Room 201" },
-  { id: "SCH-014", facultyId: "FAC-2026-04", facultyName: "Mr. Ricardo Dalisay", targetType: "section", studentId: "", grade: "Grade 11", strand: "ABM", section: "ABM-A", subject: "Organization and Management", day: "Thursday", time: "8:00 AM - 9:00 AM", room: "Room 201" },
-  { id: "SCH-015", facultyId: "FAC-2026-04", facultyName: "Mr. Ricardo Dalisay", targetType: "section", studentId: "", grade: "Grade 11", strand: "ABM", section: "ABM-A", subject: "FABM 1", day: "Thursday", time: "9:00 AM - 10:00 AM", room: "Room 201" },
-  { id: "SCH-016", facultyId: "FAC-2026-04", facultyName: "Mr. Ricardo Dalisay", targetType: "section", studentId: "", grade: "Grade 11", strand: "ABM", section: "ABM-A", subject: "Principles of Marketing", day: "Friday", time: "8:00 AM - 9:00 AM", room: "Room 201" },
+  // ==================== GRADE 11 - ABM-A (1ST & 2ND SEM) ====================
+  { id: "SCH-011", facultyId: "FAC-2026-03", facultyName: "Ms. Elena Cruz", targetType: "section", studentId: "", grade: "Grade 11", strand: "ABM", semester: "1st Sem", section: "ABM-A", subject: "General Mathematics", day: "Monday", time: "8:00 AM - 9:00 AM", room: "Room 201" },
+  { id: "SCH-012", facultyId: "FAC-2026-02", facultyName: "Mr. Juan Reyes", targetType: "section", studentId: "", grade: "Grade 11", strand: "ABM", semester: "1st Sem", section: "ABM-A", subject: "Oral Communication", day: "Monday", time: "9:00 AM - 10:00 AM", room: "Room 201" },
+  { id: "SCH-013", facultyId: "FAC-2026-03", facultyName: "Ms. Elena Cruz", targetType: "section", studentId: "", grade: "Grade 11", strand: "ABM", semester: "1st Sem", section: "ABM-A", subject: "Business Mathematics", day: "Tuesday", time: "8:00 AM - 9:00 AM", room: "Room 201" },
+  { id: "SCH-014", facultyId: "FAC-2026-04", facultyName: "Mr. Ricardo Dalisay", targetType: "section", studentId: "", grade: "Grade 11", strand: "ABM", semester: "1st Sem", section: "ABM-A", subject: "Organization and Management", day: "Thursday", time: "8:00 AM - 9:00 AM", room: "Room 201" },
+  { id: "SCH-015", facultyId: "FAC-2026-04", facultyName: "Mr. Ricardo Dalisay", targetType: "section", studentId: "", grade: "Grade 11", strand: "ABM", semester: "2nd Sem", section: "ABM-A", subject: "FABM 1", day: "Thursday", time: "9:00 AM - 10:00 AM", room: "Room 201" },
+  { id: "SCH-016", facultyId: "FAC-2026-04", facultyName: "Mr. Ricardo Dalisay", targetType: "section", studentId: "", grade: "Grade 11", strand: "ABM", semester: "2nd Sem", section: "ABM-A", subject: "Principles of Marketing", day: "Friday", time: "8:00 AM - 9:00 AM", room: "Room 201" },
 
-  // ==================== GRADE 11 - HUMSS-A (6 SUBJECTS) ====================
-  { id: "SCH-017", facultyId: "FAC-2026-05", facultyName: "Ms. Angelica Mendoza", targetType: "section", studentId: "", grade: "Grade 11", strand: "HUMSS", section: "HUMSS-A", subject: "Disciplines and Ideas in the Social Sciences", day: "Monday", time: "8:00 AM - 9:00 AM", room: "Room 205" },
-  { id: "SCH-018", facultyId: "FAC-2026-05", facultyName: "Ms. Angelica Mendoza", targetType: "section", studentId: "", grade: "Grade 11", strand: "HUMSS", section: "HUMSS-A", subject: "World Religions", day: "Monday", time: "9:00 AM - 10:00 AM", room: "Room 205" },
-  { id: "SCH-019", facultyId: "FAC-2026-03", facultyName: "Ms. Elena Cruz", targetType: "section", studentId: "", grade: "Grade 11", strand: "HUMSS", section: "HUMSS-A", subject: "General Mathematics", day: "Tuesday", time: "9:00 AM - 10:00 AM", room: "Room 205" },
-  { id: "SCH-020", facultyId: "FAC-2026-02", facultyName: "Mr. Juan Reyes", targetType: "section", studentId: "", grade: "Grade 11", strand: "HUMSS", section: "HUMSS-A", subject: "Oral Communication", day: "Wednesday", time: "8:00 AM - 9:00 AM", room: "Room 205" },
-  { id: "SCH-021", facultyId: "FAC-2026-05", facultyName: "Ms. Angelica Mendoza", targetType: "section", studentId: "", grade: "Grade 11", strand: "HUMSS", section: "HUMSS-A", subject: "Philippine Politics", day: "Thursday", time: "8:00 AM - 9:00 AM", room: "Room 205" },
-  { id: "SCH-022", facultyId: "FAC-2026-02", facultyName: "Mr. Juan Reyes", targetType: "section", studentId: "", grade: "Grade 11", strand: "HUMSS", section: "HUMSS-A", subject: "Creative Writing", day: "Friday", time: "10:00 AM - 11:00 AM", room: "Room 205" },
+  // ==================== GRADE 11 - HUMSS-A (1ST & 2ND SEM) ====================
+  { id: "SCH-017", facultyId: "FAC-2026-05", facultyName: "Ms. Angelica Mendoza", targetType: "section", studentId: "", grade: "Grade 11", strand: "HUMSS", semester: "1st Sem", section: "HUMSS-A", subject: "Disciplines and Ideas in the Social Sciences", day: "Monday", time: "8:00 AM - 9:00 AM", room: "Room 205" },
+  { id: "SCH-018", facultyId: "FAC-2026-05", facultyName: "Ms. Angelica Mendoza", targetType: "section", studentId: "", grade: "Grade 11", strand: "HUMSS", semester: "2nd Sem", section: "HUMSS-A", subject: "World Religions", day: "Monday", time: "9:00 AM - 10:00 AM", room: "Room 205" },
+  { id: "SCH-019", facultyId: "FAC-2026-03", facultyName: "Ms. Elena Cruz", targetType: "section", studentId: "", grade: "Grade 11", strand: "HUMSS", semester: "1st Sem", section: "HUMSS-A", subject: "General Mathematics", day: "Tuesday", time: "9:00 AM - 10:00 AM", room: "Room 205" },
+  { id: "SCH-020", facultyId: "FAC-2026-02", facultyName: "Mr. Juan Reyes", targetType: "section", studentId: "", grade: "Grade 11", strand: "HUMSS", semester: "1st Sem", section: "HUMSS-A", subject: "Oral Communication", day: "Wednesday", time: "8:00 AM - 9:00 AM", room: "Room 205" },
+  { id: "SCH-021", facultyId: "FAC-2026-05", facultyName: "Ms. Angelica Mendoza", targetType: "section", studentId: "", grade: "Grade 11", strand: "HUMSS", semester: "2nd Sem", section: "HUMSS-A", subject: "Philippine Politics", day: "Thursday", time: "8:00 AM - 9:00 AM", room: "Room 205" },
+  { id: "SCH-022", facultyId: "FAC-2026-02", facultyName: "Mr. Juan Reyes", targetType: "section", studentId: "", grade: "Grade 11", strand: "HUMSS", semester: "1st Sem", section: "HUMSS-A", subject: "Creative Writing", day: "Friday", time: "10:00 AM - 11:00 AM", room: "Room 205" },
 
-  // ==================== GRADE 12 - HUMSS-A (10 SUBJECTS) ====================
-  { id: "SCH-023", facultyId: "FAC-2026-05", facultyName: "Ms. Angelica Mendoza", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", section: "HUMSS-A", subject: "DIASS", day: "Tuesday", time: "8:00 AM - 9:00 AM", room: "Room 304" },
-  { id: "SCH-024", facultyId: "FAC-2026-02", facultyName: "Mr. Juan Reyes", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", section: "HUMSS-A", subject: "Creative Nonfiction", day: "Tuesday", time: "10:30 AM - 11:30 AM", room: "Room 304" },
-  { id: "SCH-025", facultyId: "FAC-2026-05", facultyName: "Ms. Angelica Mendoza", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", section: "HUMSS-A", subject: "Trends and Networks", day: "Wednesday", time: "9:00 AM - 10:00 AM", room: "Room 304" },
-  { id: "SCH-026", facultyId: "FAC-2026-05", facultyName: "Ms. Angelica Mendoza", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", section: "HUMSS-A", subject: "CESC", day: "Wednesday", time: "10:30 AM - 11:30 AM", room: "Room 304" },
-  { id: "SCH-027", facultyId: "FAC-2026-02", facultyName: "Mr. Juan Reyes", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", section: "HUMSS-A", subject: "21st Century Literature", day: "Thursday", time: "8:00 AM - 9:00 AM", room: "Room 304" },
-  { id: "SCH-028", facultyId: "FAC-2026-01", facultyName: "Prof. Maria Santos", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", section: "HUMSS-A", subject: "Media and Information Literacy", day: "Thursday", time: "9:00 AM - 10:00 AM", room: "Computer Lab 1" },
-  { id: "SCH-029", facultyId: "FAC-2026-01", facultyName: "Prof. Maria Santos", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", section: "HUMSS-A", subject: "Research 2", day: "Thursday", time: "1:00 PM - 2:00 PM", room: "Computer Lab 2" },
-  { id: "SCH-030", facultyId: "FAC-2026-01", facultyName: "Prof. Maria Santos", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", section: "HUMSS-A", subject: "3Is", day: "Friday", time: "8:00 AM - 9:00 AM", room: "Computer Lab 2" },
-  { id: "SCH-031", facultyId: "FAC-2026-04", facultyName: "Mr. Ricardo Dalisay", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", section: "HUMSS-A", subject: "Entrepreneurship", day: "Friday", time: "9:00 AM - 10:00 AM", room: "Room 304" },
-  { id: "SCH-032", facultyId: "FAC-2026-05", facultyName: "Ms. Angelica Mendoza", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", section: "HUMSS-A", subject: "Work Immersion", day: "Friday", time: "1:00 PM - 3:00 PM", room: "Community Immersion Site" },
+  // ==================== GRADE 12 - HUMSS-A (1ST & 2ND SEM) ====================
+  { id: "SCH-023", facultyId: "FAC-2026-05", facultyName: "Ms. Angelica Mendoza", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", semester: "1st Sem", section: "HUMSS-A", subject: "DIASS", day: "Tuesday", time: "8:00 AM - 9:00 AM", room: "Room 304" },
+  { id: "SCH-024", facultyId: "FAC-2026-02", facultyName: "Mr. Juan Reyes", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", semester: "1st Sem", section: "HUMSS-A", subject: "Creative Nonfiction", day: "Tuesday", time: "10:30 AM - 11:30 AM", room: "Room 304" },
+  { id: "SCH-025", facultyId: "FAC-2026-05", facultyName: "Ms. Angelica Mendoza", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", semester: "2nd Sem", section: "HUMSS-A", subject: "Trends and Networks", day: "Wednesday", time: "9:00 AM - 10:00 AM", room: "Room 304" },
+  { id: "SCH-026", facultyId: "FAC-2026-05", facultyName: "Ms. Angelica Mendoza", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", semester: "2nd Sem", section: "HUMSS-A", subject: "CESC", day: "Wednesday", time: "10:30 AM - 11:30 AM", room: "Room 304" },
+  { id: "SCH-027", facultyId: "FAC-2026-02", facultyName: "Mr. Juan Reyes", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", semester: "1st Sem", section: "HUMSS-A", subject: "21st Century Literature", day: "Thursday", time: "8:00 AM - 9:00 AM", room: "Room 304" },
+  { id: "SCH-028", facultyId: "FAC-2026-01", facultyName: "Prof. Maria Santos", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", semester: "1st Sem", section: "HUMSS-A", subject: "Media and Information Literacy", day: "Thursday", time: "9:00 AM - 10:00 AM", room: "Computer Lab 1" },
+  { id: "SCH-029", facultyId: "FAC-2026-01", facultyName: "Prof. Maria Santos", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", semester: "2nd Sem", section: "HUMSS-A", subject: "Research 2", day: "Thursday", time: "1:00 PM - 2:00 PM", room: "Computer Lab 2" },
+  { id: "SCH-030", facultyId: "FAC-2026-01", facultyName: "Prof. Maria Santos", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", semester: "2nd Sem", section: "HUMSS-A", subject: "3Is", day: "Friday", time: "8:00 AM - 9:00 AM", room: "Computer Lab 2" },
+  { id: "SCH-031", facultyId: "FAC-2026-04", facultyName: "Mr. Ricardo Dalisay", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", semester: "2nd Sem", section: "HUMSS-A", subject: "Entrepreneurship", day: "Friday", time: "9:00 AM - 10:00 AM", room: "Room 304" },
+  { id: "SCH-032", facultyId: "FAC-2026-05", facultyName: "Ms. Angelica Mendoza", targetType: "section", studentId: "", grade: "Grade 12", strand: "HUMSS", semester: "2nd Sem", section: "HUMSS-A", subject: "Work Immersion", day: "Friday", time: "1:00 PM - 3:00 PM", room: "Community Immersion Site" },
 
   // ==================== ELEMENTARY & JUNIOR HIGH SAMPLE SCHEDULES ====================
-  { id: "SCH-033", facultyId: "FAC-2026-05", facultyName: "Ms. Angelica Mendoza", targetType: "section", studentId: "", grade: "Grade 1", strand: "N/A", section: "Section A", subject: "Makabansa", day: "Mon / Wed / Fri", time: "8:00 AM - 8:45 AM", room: "Room 101" },
-  { id: "SCH-034", facultyId: "FAC-2026-03", facultyName: "Ms. Elena Cruz", targetType: "section", studentId: "", grade: "Grade 1", strand: "N/A", section: "Section A", subject: "Math", day: "Mon / Wed / Fri", time: "9:00 AM - 9:45 AM", room: "Room 101" },
-  { id: "SCH-035", facultyId: "FAC-2026-02", facultyName: "Mr. Juan Reyes", targetType: "section", studentId: "", grade: "Grade 1", strand: "N/A", section: "Section A", subject: "English", day: "Tue / Thu", time: "8:00 AM - 8:45 AM", room: "Room 101" },
-  { id: "SCH-036", facultyId: "FAC-2026-06", facultyName: "Coach Gabriel Perez", targetType: "section", studentId: "", grade: "Grade 4", strand: "N/A", section: "Section A", subject: "EPP", day: "Mon / Wed", time: "1:00 PM - 2:00 PM", room: "HE / ICT Lab" },
-  { id: "SCH-037", facultyId: "FAC-2026-06", facultyName: "Coach Gabriel Perez", targetType: "section", studentId: "", grade: "Grade 7", strand: "N/A", section: "Section A", subject: "MAPEH", day: "Tue / Thu", time: "2:00 PM - 3:00 PM", room: "Gymnasium" },
-  { id: "SCH-038", facultyId: "FAC-2026-06", facultyName: "Coach Gabriel Perez", targetType: "section", studentId: "", grade: "Grade 10", strand: "N/A", section: "Section A", subject: "TLE", day: "Mon / Wed", time: "2:00 PM - 3:00 PM", room: "TLE Workshop" },
-  { id: "SCH-039", facultyId: "FAC-2026-03", facultyName: "Ms. Elena Cruz", targetType: "section", studentId: "", grade: "Grade 10", strand: "N/A", section: "Section A", subject: "Mathematics", day: "Mon / Wed / Fri", time: "10:30 AM - 11:30 AM", room: "Room 108" }
+  { id: "SCH-033", facultyId: "FAC-2026-05", facultyName: "Ms. Angelica Mendoza", targetType: "section", studentId: "", grade: "Grade 1", strand: "N/A", semester: "N/A", section: "Section A", subject: "Makabansa", day: "Mon / Wed / Fri", time: "8:00 AM - 8:45 AM", room: "Room 101" },
+  { id: "SCH-034", facultyId: "FAC-2026-03", facultyName: "Ms. Elena Cruz", targetType: "section", studentId: "", grade: "Grade 1", strand: "N/A", semester: "N/A", section: "Section A", subject: "Math", day: "Mon / Wed / Fri", time: "9:00 AM - 9:45 AM", room: "Room 101" },
+  { id: "SCH-035", facultyId: "FAC-2026-02", facultyName: "Mr. Juan Reyes", targetType: "section", studentId: "", grade: "Grade 1", strand: "N/A", semester: "N/A", section: "Section A", subject: "English", day: "Tue / Thu", time: "8:00 AM - 8:45 AM", room: "Room 101" },
+  { id: "SCH-036", facultyId: "FAC-2026-06", facultyName: "Coach Gabriel Perez", targetType: "section", studentId: "", grade: "Grade 4", strand: "N/A", semester: "N/A", section: "Section A", subject: "EPP", day: "Mon / Wed", time: "1:00 PM - 2:00 PM", room: "HE / ICT Lab" },
+  { id: "SCH-037", facultyId: "FAC-2026-06", facultyName: "Coach Gabriel Perez", targetType: "section", studentId: "", grade: "Grade 7", strand: "N/A", semester: "N/A", section: "Section A", subject: "MAPEH", day: "Tue / Thu", time: "2:00 PM - 3:00 PM", room: "Gymnasium" },
+  { id: "SCH-038", facultyId: "FAC-2026-06", facultyName: "Coach Gabriel Perez", targetType: "section", studentId: "", grade: "Grade 10", strand: "N/A", semester: "N/A", section: "Section A", subject: "TLE", day: "Mon / Wed", time: "2:00 PM - 3:00 PM", room: "TLE Workshop" },
+  { id: "SCH-039", facultyId: "FAC-2026-03", facultyName: "Ms. Elena Cruz", targetType: "section", studentId: "", grade: "Grade 10", strand: "N/A", semester: "N/A", section: "Section A", subject: "Mathematics", day: "Mon / Wed / Fri", time: "10:30 AM - 11:30 AM", room: "Room 108" }
 ];
 
 const defaultData = {
-  curriculumVersion: 6,
+  curriculumVersion: 8,
   students: [
     S("2026-001", "CATHERINE A. ROSARIO", "Grade 12", "ABM-A", "Enrolled"),
     S("2026-002", "ACHILLES NERO C. AGUILA", "Grade 11", "ABM-A", "Enrolled"),
@@ -210,12 +221,12 @@ const defaultData = {
     S("2026-006", "CARL ANTHONY V. DE VERA", "Grade 12", "ABM-A", "Enrolled")
   ],
   enrollments: [
-    { student: "2026-001", schoolYear: "2026-2027", grade: "Grade 12", strand: "ABM", section: "ABM-A", date: "2026-06-15", status: "Enrolled", enrollmentStatus: "Enrolled" },
-    { student: "2026-002", schoolYear: "2026-2027", grade: "Grade 11", strand: "ABM", section: "ABM-A", date: "2026-06-15", status: "Enrolled", enrollmentStatus: "Enrolled" },
-    { student: "2026-003", schoolYear: "2026-2027", grade: "Grade 12", strand: "ABM", section: "ABM-A", date: "2026-06-15", status: "Enrolled", enrollmentStatus: "Enrolled" },
-    { student: "2026-004", schoolYear: "2026-2027", grade: "Grade 11", strand: "HUMSS", section: "HUMSS-A", date: "2026-06-15", status: "Enrolled", enrollmentStatus: "Enrolled" },
-    { student: "2026-005", schoolYear: "2026-2027", grade: "Grade 12", strand: "ABM", section: "ABM-A", date: "2026-06-15", status: "Enrolled", enrollmentStatus: "Enrolled" },
-    { student: "2026-006", schoolYear: "2026-2027", grade: "Grade 12", strand: "ABM", section: "ABM-A", date: "2026-06-15", status: "Enrolled", enrollmentStatus: "Enrolled" }
+    { student: "2026-001", schoolYear: "2026-2027", grade: "Grade 12", strand: "ABM", semester: "1st Sem", section: "ABM-A", date: "2026-06-15", status: "Enrolled", enrollmentStatus: "Enrolled" },
+    { student: "2026-002", schoolYear: "2026-2027", grade: "Grade 11", strand: "ABM", semester: "1st Sem", section: "ABM-A", date: "2026-06-15", status: "Enrolled", enrollmentStatus: "Enrolled" },
+    { student: "2026-003", schoolYear: "2026-2027", grade: "Grade 12", strand: "ABM", semester: "1st Sem", section: "ABM-A", date: "2026-06-15", status: "Enrolled", enrollmentStatus: "Enrolled" },
+    { student: "2026-004", schoolYear: "2026-2027", grade: "Grade 11", strand: "HUMSS", semester: "1st Sem", section: "HUMSS-A", date: "2026-06-15", status: "Enrolled", enrollmentStatus: "Enrolled" },
+    { student: "2026-005", schoolYear: "2026-2027", grade: "Grade 12", strand: "ABM", semester: "1st Sem", section: "ABM-A", date: "2026-06-15", status: "Enrolled", enrollmentStatus: "Enrolled" },
+    { student: "2026-006", schoolYear: "2026-2027", grade: "Grade 12", strand: "ABM", semester: "1st Sem", section: "ABM-A", date: "2026-06-15", status: "Enrolled", enrollmentStatus: "Enrolled" }
   ],
   grades: {
     "2026-001": [
@@ -396,7 +407,22 @@ Object.entries(data.grades).forEach(([stuId, rows]) => {
     }
   });
 });
-data.curriculumVersion = 6;
+
+// Normalize & sync semester metadata ("1st Sem" / "2nd Sem" / "N/A") across subjects, enrollments & schedules
+(data.subjects || []).forEach(sub => {
+  const grades = Array.isArray(sub.gradeLevels) ? sub.gradeLevels : [];
+  const hasSHS = grades.includes("Grade 11") || grades.includes("Grade 12");
+  if (!hasSHS) {
+    sub.semester = "N/A";
+  } else if (sub.semester && sub.semester !== "N/A") {
+    sub.semester = normalizeSemester(sub.semester, true);
+  } else {
+    const defSub = defaultSubjects.find(d => d.name.toLowerCase() === String(sub.name || "").toLowerCase());
+    sub.semester = normalizeSemester(defSub?.semester || "1st Sem", true);
+  }
+});
+
+data.curriculumVersion = 8;
 
 // Restore original group names if temporary names were cached, and remove STEM strand references
 const restoreGroupNames = {
@@ -424,24 +450,35 @@ data.students.forEach(s => {
 });
 
 data.enrollments.forEach(e => {
+  const isSHS = e.grade === "Grade 11" || e.grade === "Grade 12";
   if (e.strand === "STEM") e.strand = "ABM";
   if (typeof e.section === "string" && e.section.startsWith("STEM-")) {
     e.section = e.section.replace(/^STEM-/, "ABM-");
   }
+  e.semester = normalizeSemester(e.semester, isSHS);
   if (e.status === "Regular") e.status = "Enrolled";
   if (!e.enrollmentStatus || e.enrollmentStatus === "Regular") e.enrollmentStatus = "Enrolled";
 });
 
 (data.schedules || []).forEach(sch => {
+  const isSHS = sch.grade === "Grade 11" || sch.grade === "Grade 12";
   if (sch.strand === "STEM") sch.strand = "ABM";
   if (typeof sch.section === "string" && sch.section.startsWith("STEM-")) {
     sch.section = sch.section.replace(/^STEM-/, "ABM-");
+  }
+  if (!isSHS) {
+    sch.semester = "N/A";
+  } else if (sch.semester && sch.semester !== "N/A") {
+    sch.semester = normalizeSemester(sch.semester, true);
+  } else {
+    const matchedSub = (data.subjects || []).find(s => s.name.toLowerCase() === String(sch.subject || "").toLowerCase());
+    sch.semester = normalizeSemester(matchedSub?.semester || "1st Sem", true);
   }
 });
 
 (data.facultyList || []).forEach(f => {
   if (typeof f.department === "string" && f.department.includes("STEM")) {
-    f.department = f.department.replace(/STEM/g, "ABM & HUMSS");
+    f.department = f.department.replace(/STEM/g, "Senior High School");
   }
   if (!f.status) f.status = "Active";
 });
@@ -455,8 +492,19 @@ data.enrollments.forEach(e => {
   }
 });
 
-// Helper: Retrieve subjects assigned to a specific grade level (and strand for Grade 11 & 12)
-function getSubjectsForGrade(grade, strand = "") {
+// Helper: Retrieve semester ("1st Sem", "2nd Sem", or "N/A") for a subject
+function getSubjectSemester(subjectName, grade = "") {
+  const isSHS = !grade || grade === "Grade 11" || grade === "Grade 12";
+  if (!isSHS) return "N/A";
+  const found = (data.subjects || []).find(s => s.name.toLowerCase() === String(subjectName || "").toLowerCase());
+  if (!found) return "N/A";
+  const hasSHS = Array.isArray(found.gradeLevels) && (found.gradeLevels.includes("Grade 11") || found.gradeLevels.includes("Grade 12"));
+  if (!hasSHS) return "N/A";
+  return normalizeSemester(found.semester, true);
+}
+
+// Helper: Retrieve subjects assigned to a specific grade level, strand, and semester
+function getSubjectsForGrade(grade, strand = "", semester = "") {
   const list = data.subjects || [];
   if (!grade) return list.map(s => s.name);
 
@@ -468,6 +516,11 @@ function getSubjectsForGrade(grade, strand = "") {
       if (isSHS && strand && strand !== "N/A") {
         const subStrands = Array.isArray(s.strands) ? s.strands : [];
         if (subStrands.length > 0 && !subStrands.includes(strand)) return false;
+      }
+      if (isSHS && semester && semester !== "N/A" && semester !== "All") {
+        const targetSem = normalizeSemester(semester, true);
+        const subSem = normalizeSemester(s.semester || "1st Sem", true);
+        if (subSem !== "Both" && subSem !== targetSem) return false;
       }
       return true;
     })

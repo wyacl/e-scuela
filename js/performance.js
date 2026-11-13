@@ -1,4 +1,4 @@
-// Academic Performance: Filtered by Grade Level & SHS Strand (ABM / HUMSS)
+// Academic Performance: Filtered by Grade Level, SHS Strand (ABM / HUMSS) & Semester (1st Sem / 2nd Sem)
 const bars = list => list.map(g => {
   const score = typeof calc(g) === "number" ? calc(g) : 0;
   return `<div class="bar" style="height:${Math.max(10, (score - 65) * 3)}px" title="${esc(g[0])}: ${score}"><span>${esc(g[0].slice(0, 5))}</span></div>`;
@@ -47,10 +47,16 @@ function handlePerfGradeChange() {
   const grade = $("perfGradeFilter")?.value || "";
   const isSHS = grade === "Grade 11" || grade === "Grade 12";
   const strandEl = $("perfStrandFilter");
+  const semEl = $("perfSemesterFilter");
 
   if (strandEl) {
     strandEl.style.display = isSHS ? "" : "none";
     if (!isSHS) strandEl.value = "";
+  }
+
+  if (semEl) {
+    semEl.style.display = isSHS ? "" : "none";
+    if (!isSHS) semEl.value = "";
   }
 
   renderPerformance();
@@ -69,25 +75,46 @@ function renderPerformance() {
   const selectedGrade = gradeFilterEl?.value || "";
   const isSHS = selectedGrade === "Grade 11" || selectedGrade === "Grade 12";
   const strandFilterEl = $("perfStrandFilter");
+  const semFilterEl = $("perfSemesterFilter");
 
   if (strandFilterEl) {
     strandFilterEl.style.display = isSHS ? "" : "none";
     if (!isSHS) strandFilterEl.value = "";
   }
 
-  const selectedStrand = isSHS ? (strandFilterEl?.value || "") : "";
+  if (semFilterEl) {
+    semFilterEl.style.display = isSHS ? "" : "none";
+    if (!isSHS) semFilterEl.value = "";
+  }
 
-  // 1. Score all students
-  const scoredStudents = data.students.map(s => {
+  const selectedStrand = isSHS ? (strandFilterEl?.value || "") : "";
+  const selectedSemester = isSHS ? (semFilterEl?.value || "") : "";
+
+  const getStudentGradesForScope = s => {
     const gr = data.grades[s.id] || [];
-    const avg = Number(avgOf(gr));
-    return {
-      student: s,
-      strand: getStudentStrand(s),
-      gpa: avg,
-      honors: getHonorStanding(avg)
-    };
-  });
+    if (!selectedSemester) return gr;
+    return gr.filter(g => {
+      const sem = typeof getSubjectSemester === "function"
+        ? getSubjectSemester(g[0], s.grade)
+        : "N/A";
+      return sem === selectedSemester;
+    });
+  };
+
+  // 1. Score all students within selected semester scope
+  const scoredStudents = data.students
+    .map(s => {
+      const gr = getStudentGradesForScope(s);
+      const avg = Number(avgOf(gr));
+      return {
+        student: s,
+        strand: getStudentStrand(s),
+        subjectCount: gr.length,
+        gpa: avg,
+        honors: getHonorStanding(avg)
+      };
+    })
+    .filter(item => !selectedSemester || item.subjectCount > 0);
 
   // 2. Top 1–3 Performers Card(s)
   const byGradeEl = $("topPerformersByGrade");
@@ -97,8 +124,13 @@ function renderPerformance() {
         .filter(item => item.student.grade === selectedGrade && (!selectedStrand || item.strand === selectedStrand))
         .sort((a, b) => b.gpa - a.gpa);
 
-      const cardTitle = selectedStrand
-        ? `${selectedGrade} — ${selectedStrand} Strand`
+      const subtitleParts = [
+        selectedStrand ? `${selectedStrand} Strand` : "",
+        selectedSemester
+      ].filter(Boolean);
+
+      const cardTitle = subtitleParts.length
+        ? `${selectedGrade} — ${subtitleParts.join(" • ")}`
         : selectedGrade;
 
       byGradeEl.innerHTML = `
@@ -141,7 +173,9 @@ function renderPerformance() {
     strandPanelEl.style.display = showStrandBreakdown ? "" : "none";
   }
   if ($("perfStrandBadge")) {
-    $("perfStrandBadge").textContent = selectedGrade ? `${selectedGrade} Strands` : "Grade 11 & 12 Strands";
+    $("perfStrandBadge").textContent = selectedGrade
+      ? `${selectedGrade} Strands${selectedSemester ? ` • ${selectedSemester}` : ""}`
+      : "Grade 11 & 12 Strands";
   }
 
   if (byStrandEl && showStrandBreakdown) {
@@ -167,21 +201,20 @@ function renderPerformance() {
     }).join("");
   }
 
-  // 4. Filter Students for Academic Summary & Performance by Subject Chart
+  // 4. Filter Students & Grades for Academic Summary & Performance by Subject Chart
   const matchingStudents = data.students.filter(s => {
     if (selectedGrade && s.grade !== selectedGrade) return false;
     if (selectedStrand && getStudentStrand(s) !== selectedStrand) return false;
     return true;
   });
 
-  const scopeLabel = selectedGrade
-    ? (selectedStrand ? ` (${selectedGrade} - ${selectedStrand})` : ` (${selectedGrade})`)
-    : "";
+  const scopeParts = [selectedGrade, selectedStrand, selectedSemester].filter(Boolean);
+  const scopeLabel = scopeParts.length ? ` (${scopeParts.join(" - ")})` : "";
 
   if ($("perfSummaryTitle")) $("perfSummaryTitle").textContent = `Academic Summary${scopeLabel}`;
   if ($("perfChartTitle")) $("perfChartTitle").textContent = `Performance by Subject${scopeLabel}`;
 
-  const filteredGrades = matchingStudents.flatMap(s => data.grades[s.id] || []);
+  const filteredGrades = matchingStudents.flatMap(s => getStudentGradesForScope(s));
   const count = st => filteredGrades.filter(g => statusOf(calc(g)) === st).length;
 
   const summaryEl = $("performanceSummary");

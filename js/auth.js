@@ -2,6 +2,78 @@ let loginType = "faculty";
 let currentUser = null;
 let currentStudent = null;
 
+function saveSession(page = "") {
+  try {
+    const payload = {
+      loginType,
+      userId: currentUser ? (currentUser.id || "admin") : (currentStudent ? currentStudent.id : null),
+      role: currentUser ? currentUser.role : (currentStudent ? "Student" : null),
+      page
+    };
+    if (payload.userId) {
+      sessionStorage.setItem("eScuelaSession", JSON.stringify(payload));
+      document.documentElement.classList.add("has-session");
+    }
+  } catch (e) {
+    console.error("Session save error:", e);
+  }
+}
+
+function clearSession() {
+  try {
+    sessionStorage.removeItem("eScuelaSession");
+    document.documentElement.classList.remove("has-session");
+  } catch (e) {
+    console.error("Session clear error:", e);
+  }
+}
+
+function restoreSession() {
+  try {
+    const raw = sessionStorage.getItem("eScuelaSession");
+    if (!raw) {
+      document.documentElement.classList.remove("has-session");
+      return false;
+    }
+    const saved = JSON.parse(raw);
+    if (!saved || !saved.userId) {
+      clearSession();
+      return false;
+    }
+
+    if (saved.loginType === "faculty") {
+      loginType = "faculty";
+      if (saved.role === "Administrator" && saved.userId === "admin") {
+        currentUser = { name: "Administrator", role: "Administrator" };
+        openFaculty();
+        if (saved.page && $(saved.page)) showPage(saved.page);
+        return true;
+      }
+      const fac = (data.facultyList || []).find(f => f.id === saved.userId);
+      if (fac && (fac.status || "Active") === "Active") {
+        currentUser = { id: fac.id, name: fac.name, role: "Faculty" };
+        if (typeof bindActiveFaculty === "function") bindActiveFaculty(fac.id);
+        openFacultyPortal();
+        if (saved.page && $(saved.page)) showPage(saved.page);
+        return true;
+      }
+    } else if (saved.loginType === "student") {
+      loginType = "student";
+      const s = (data.students || []).find(x => x.id === saved.userId);
+      if (s) {
+        currentStudent = s;
+        openStudent();
+        if (saved.page && $(saved.page)) showPage(saved.page);
+        return true;
+      }
+    }
+  } catch (e) {
+    console.error("Session restore error:", e);
+  }
+  clearSession();
+  return false;
+}
+
 function selectLoginType(type) {
   loginType = type;
   $("facultyBtn")?.classList.toggle("active", type === "faculty");
@@ -41,6 +113,7 @@ function login() {
     // 1. Administrator Account
     if (u === "admin" && p === "admin123") {
       currentUser = { name: "Administrator", role: "Administrator" };
+      saveSession();
       return openFaculty();
     }
 
@@ -51,8 +124,9 @@ function login() {
     );
 
     if (fac) {
-      if ((fac.status || "Active") === "Inactive") {
-        $("loginError").textContent = "This faculty account is inactive. Please contact the administrator.";
+      const status = fac.status || "Active";
+      if (status !== "Active") {
+        $("loginError").textContent = `This faculty account is currently ${status.toLowerCase()}. Please contact the administrator.`;
         return;
       }
       currentUser = {
@@ -63,6 +137,7 @@ function login() {
       if (typeof bindActiveFaculty === "function") {
         bindActiveFaculty(fac.id);
       }
+      saveSession();
       return openFacultyPortal();
     }
   } else {
@@ -73,6 +148,7 @@ function login() {
     );
     if (s) {
       currentStudent = s;
+      saveSession();
       return openStudent();
     }
   }
@@ -82,10 +158,12 @@ function login() {
 
 function logout() {
   closeDrawer();
+  clearSession();
+  document.documentElement.classList.remove("has-session");
   currentUser = null;
   currentStudent = null;
-  $("app").classList.add("hidden");
-  $("login").classList.remove("hidden");
+  $("app")?.classList.add("hidden");
+  $("login")?.classList.remove("hidden");
   selectLoginType("faculty");
 }
 
@@ -154,14 +232,17 @@ function searchFindAccount() {
   `).join("");
 
   const facultyCards = matchedFaculty.map(f => {
-    const isInactive = (f.status || "Active") === "Inactive";
+    const status = f.status || "Active";
+    const statusBadge = status === "Active"
+      ? ""
+      : `<span class="badge ${status === "On Leave" ? "irregular" : status === "Inactive" ? "silver" : "dropped"}">${esc(status)}</span>`;
     return `
       <div style="padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:#ffffff;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
         <div style="min-width:0;">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
             <strong style="font-size:13.5px;color:var(--primary-dark);">${esc(f.name)}</strong>
             <span class="badge gold">Faculty</span>
-            ${isInactive ? `<span class="badge dropped">Inactive</span>` : ""}
+            ${statusBadge}
           </div>
           <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${esc(f.department || "Faculty")}</div>
           <div style="font-size:12px;margin-top:4px;">Username: <code>${esc(f.username)}</code></div>

@@ -24,16 +24,22 @@ function syncFacultyClassesFromSchedules() {
   if (!data.faculty) return;
   const facSchedules = (data.schedules || []).filter(sch => sch.facultyId === data.faculty.id);
 
-  // Deduplicate by grade + section + subject so each handled class appears cleanly
+  // Deduplicate by grade + section + subject + semester so each handled class appears cleanly
   const classMap = new Map();
   facSchedules.forEach(sch => {
-    const key = `${sch.grade}|${sch.section}|${sch.subject}`;
+    const isSHS = sch.grade === "Grade 11" || sch.grade === "Grade 12";
+    const semester = isSHS
+      ? (sch.semester && sch.semester !== "N/A" ? sch.semester : getSubjectSemester(sch.subject, sch.grade))
+      : "N/A";
+    const key = `${sch.grade}|${sch.section}|${sch.subject}|${semester}`;
+
     if (!classMap.has(key)) {
       classMap.set(key, {
         id: sch.id,
         grade: sch.grade,
         section: sch.section,
         subject: sch.subject,
+        semester,
         schedule: `${sch.day} ${sch.time}`,
         room: sch.room || "Room 204"
       });
@@ -44,6 +50,21 @@ function syncFacultyClassesFromSchedules() {
   });
 
   data.faculty.classes = Array.from(classMap.values());
+}
+
+function formatFacultyClassOption(c) {
+  const isMobile = typeof window !== "undefined" && window.innerWidth <= 640;
+  const semTag = (c.semester && c.semester !== "N/A") ? ` (${c.semester})` : "";
+  const rawSub = String(c.subject || "");
+
+  if (isMobile) {
+    const shortGrade = String(c.grade || "").replace(/^Grade\s+/i, "G");
+    // Cut/truncate subject title if it exceeds 16 characters on mobile
+    const subLabel = rawSub.length > 16 ? `${rawSub.slice(0, 15).trim()}…` : rawSub;
+    return `${shortGrade} ${c.section} • ${subLabel}${semTag}`;
+  }
+
+  return `${c.grade} - ${c.section} • ${rawSub}${semTag} (${c.room || "Room 204"})`;
 }
 
 function initFacultyData() {
@@ -112,14 +133,19 @@ function renderFacultyDashboard() {
 
   const schedEl = $("facultyUpcomingSchedule");
   if (schedEl) {
-    schedEl.innerHTML = fac.classes.map(c => `
-      <div class="fac-schedule-item">
-        <div class="fac-sched-time">
-          <i class="fa-solid fa-clock"></i> ${esc(c.schedule)} &bull; <i class="fa-solid fa-location-dot"></i> <b>${esc(c.room || "Room 204")}</b>
+    schedEl.innerHTML = fac.classes.map(c => {
+      const semTag = (c.semester && c.semester !== "N/A")
+        ? ` &bull; <span class="badge ${c.semester === "2nd Sem" ? "silver" : "enrolled"}" style="font-size:10px;padding:2px 6px;">${esc(c.semester)}</span>`
+        : "";
+      return `
+        <div class="fac-schedule-item">
+          <div class="fac-sched-time">
+            <i class="fa-solid fa-clock"></i> ${esc(c.schedule)} &bull; <i class="fa-solid fa-location-dot"></i> <b>${esc(c.room || "Room 204")}</b>${semTag}
+          </div>
+          <div class="fac-sched-title"><b>${esc(c.subject)}</b> &bull; ${esc(c.grade)} (${esc(c.section)})</div>
         </div>
-        <div class="fac-sched-title"><b>${esc(c.subject)}</b> &bull; ${esc(c.grade)} (${esc(c.section)})</div>
-      </div>
-    `).join("") || `<p style="color:var(--text-muted);font-size:13px;">No class schedules assigned yet.</p>`;
+      `;
+    }).join("") || `<p style="color:var(--text-muted);font-size:13px;">No class schedules assigned yet.</p>`;
   }
 
   const noticeEl = $("facultyRecentNotices");
@@ -151,11 +177,15 @@ function renderFacultyClasses() {
 
   container.innerHTML = data.faculty.classes.map(c => {
     const enrolledCount = data.students.filter(s => s.grade === c.grade && s.section === c.section).length;
+    const semBadge = (c.semester && c.semester !== "N/A")
+      ? `<span class="badge ${c.semester === "2nd Sem" ? "silver" : "enrolled"}">${esc(c.semester)}</span>`
+      : "";
     return `
       <div class="card faculty-class-card">
-        <div class="fac-class-header">
+        <div class="fac-class-header" style="flex-wrap:wrap;gap:6px;">
           <span class="badge enrolled">${esc(c.grade)}</span>
           <span class="badge gold">${esc(c.section)}</span>
+          ${semBadge}
         </div>
         <h3 style="margin: 10px 0 4px 0; color: var(--primary-dark); font-size: 18px;">${esc(c.subject)}</h3>
         <p style="margin: 0 0 4px 0; font-size: 12.5px; color: var(--text-muted);">
@@ -178,7 +208,8 @@ function openClassStudentList(classId) {
   const cls = data.faculty.classes.find(c => c.id === classId);
   if (!cls) return;
 
-  $("facultyClassTitle").textContent = `${cls.subject} — ${cls.grade} (${cls.section}) • ${cls.room || "Room 204"}`;
+  const semLabel = (cls.semester && cls.semester !== "N/A") ? ` [${cls.semester}]` : "";
+  $("facultyClassTitle").textContent = `${cls.subject}${semLabel} — ${cls.grade} (${cls.section}) • ${cls.room || "Room 204"}`;
   const students = data.students.filter(s => s.grade === cls.grade && s.section === cls.section);
 
   const tableBody = $("facultyClassStudentsTable");
@@ -226,9 +257,9 @@ function populateFacultyGradesFilters() {
   const sel = $("facGradeClassSelect");
   if (!sel) return;
   const current = sel.value;
-  sel.innerHTML = data.faculty.classes.map(c => `
-    <option value="${c.id}">${esc(c.grade)} - ${esc(c.section)} &bull; ${esc(c.subject)} (${esc(c.room || "Room 204")})</option>
-  `).join("");
+  sel.innerHTML = data.faculty.classes.map(c =>
+    `<option value="${esc(c.id)}">${esc(formatFacultyClassOption(c))}</option>`
+  ).join("");
   if (current && data.faculty.classes.some(c => c.id === current)) sel.value = current;
 }
 
@@ -307,9 +338,9 @@ function populateFacultyAttendanceFilters() {
   const sel = $("facAttClassSelect");
   if (!sel) return;
   const current = sel.value;
-  sel.innerHTML = data.faculty.classes.map(c => `
-    <option value="${c.id}">${esc(c.grade)} - ${esc(c.section)} &bull; ${esc(c.subject)} (${esc(c.room || "Room 204")})</option>
-  `).join("");
+  sel.innerHTML = data.faculty.classes.map(c =>
+    `<option value="${esc(c.id)}">${esc(formatFacultyClassOption(c))}</option>`
+  ).join("");
   if (current && data.faculty.classes.some(c => c.id === current)) sel.value = current;
 
   const dateInp = $("facAttDate");
@@ -705,7 +736,54 @@ function postAdminAnnouncement() {
 // --------------------------------------------------
 // 6. REPORTS
 // --------------------------------------------------
+function normalizeFacSem(v) {
+  const s = String(v || "").trim().toLowerCase();
+  if (!s || s === "n/a") return "";
+  if (s.startsWith("1")) return "1st";
+  if (s.startsWith("2")) return "2nd";
+  return s;
+}
+
+function populateFacultyReportFilters() {
+  const fac = data.faculty;
+  if (!fac) return;
+
+  const classes = fac.classes || [];
+  const hasShsClasses = classes.some(c => normalizeFacSem(c.semester) !== "");
+  const semSel = $("facReportSemFilter");
+  const clsSel = $("facReportClassSelect");
+
+  if (semSel) {
+    semSel.style.display = hasShsClasses ? "" : "none";
+    if (!hasShsClasses) semSel.value = "";
+  }
+
+  const semKey = hasShsClasses ? normalizeFacSem(semSel?.value) : "";
+  const filteredClasses = classes.filter(c => !semKey || normalizeFacSem(c.semester) === semKey);
+
+  if (clsSel) {
+    const prevVal = clsSel.value;
+    if (filteredClasses.length) {
+      clsSel.disabled = false;
+      clsSel.innerHTML = filteredClasses.map(c =>
+        `<option value="${esc(c.id)}">${esc(formatFacultyClassOption(c))}</option>`
+      ).join("");
+      if (prevVal && filteredClasses.some(c => c.id === prevVal)) {
+        clsSel.value = prevVal;
+      }
+    } else {
+      clsSel.disabled = true;
+      clsSel.innerHTML = `<option value="">No classes for this semester</option>`;
+    }
+  }
+}
+
+function handleFacReportSemChange() {
+  populateFacultyReportFilters();
+}
+
 function renderFacultyReports() {
+  populateFacultyReportFilters();
   const container = $("facReportsList");
   if (!container) return;
 
@@ -732,9 +810,18 @@ function renderFacultyReports() {
 
 function generateFacultyReportHTML(title) {
   const fac = data.faculty;
-  const selectedClassId = $("facGradeClassSelect")?.value || $("facAttClassSelect")?.value || (fac.classes[0] && fac.classes[0].id);
-  const primaryClass = fac.classes.find(c => c.id === selectedClassId) || fac.classes[0] || { id: "CLS-1", grade: "Grade 12", section: "ABM-A", subject: "Research 2", room: "Computer Lab 2" };
-  const students = data.students.filter(s => s.grade === primaryClass.grade && s.section === primaryClass.section);
+  const semSel = $("facReportSemFilter");
+  const semKey = normalizeFacSem(semSel?.value);
+  const matchingClasses = (fac.classes || []).filter(c => !semKey || normalizeFacSem(c.semester) === semKey);
+
+  const selectedClassId = $("facReportClassSelect")?.value || $("facGradeClassSelect")?.value || $("facAttClassSelect")?.value || (matchingClasses[0] && matchingClasses[0].id);
+  const primaryClass = matchingClasses.find(c => c.id === selectedClassId)
+    || matchingClasses[0]
+    || { id: "NONE", grade: "N/A", section: "N/A", subject: "No Class Assigned", semester: semSel?.value || "N/A", room: "N/A" };
+  const students = primaryClass.id === "NONE"
+    ? []
+    : data.students.filter(s => s.grade === primaryClass.grade && s.section === primaryClass.section);
+  const semSubtitle = (primaryClass.semester && primaryClass.semester !== "N/A") ? ` &bull; ${esc(primaryClass.semester)}` : "";
 
   let tableHeaderHTML = "";
   let tableRowsHTML = "";
@@ -789,7 +876,7 @@ function generateFacultyReportHTML(title) {
           <td style="padding:8px;text-align:center;font-weight:800;color:${rate >= 80 ? '#2e7d32' : (rate === 0 ? '#64748b' : '#b91c1c')};">${rate}%</td>
         </tr>
       `;
-    }).join("") || `<tr><td colspan="8" style="padding:12px;text-align:center;">No students enrolled.</td></tr>`;
+    }).join("") || `<tr><td colspan="8" style="padding:12px;text-align:center;">No students enrolled for this selection.</td></tr>`;
 
   } else if (title === "Quarterly Subject Summary") {
     let totalScore = 0;
@@ -827,7 +914,7 @@ function generateFacultyReportHTML(title) {
           <td style="padding:8px;text-align:center;"><span class="badge ${st.toLowerCase()}">${esc(st)}</span></td>
         </tr>
       `;
-    }).join("") || `<tr><td colspan="5" style="padding:12px;text-align:center;">No records available.</td></tr>`;
+    }).join("") || `<tr><td colspan="5" style="padding:12px;text-align:center;">No records available for this selection.</td></tr>`;
 
     const classAverage = countedScores > 0 ? (totalScore / countedScores).toFixed(2) : "0.00";
     summaryFootnoteHTML = `
@@ -869,7 +956,7 @@ function generateFacultyReportHTML(title) {
           <td style="padding:8px;text-align:center;">${statusOf(finalVal)}</td>
         </tr>
       `;
-    }).join("") || `<tr><td colspan="9" style="padding:12px;text-align:center;">No students enrolled.</td></tr>`;
+    }).join("") || `<tr><td colspan="9" style="padding:12px;text-align:center;">No students enrolled for this selection.</td></tr>`;
   }
 
   return `
@@ -879,7 +966,7 @@ function generateFacultyReportHTML(title) {
         <div style="font-size:12px;color:#555;">Official Faculty Academic Record &bull; S.Y. 2026-2027</div>
         <h3 style="margin:12px 0 0 0;text-transform:uppercase;color:#1f2937;">${esc(title)}</h3>
         <div style="font-size:12px;color:#7d090f;font-weight:700;margin-top:4px;">
-          Instructor: ${esc(fac.name)} &bull; ${esc(primaryClass.subject)} (${esc(primaryClass.grade)} - ${esc(primaryClass.section)}) &bull; ${esc(primaryClass.room || "Room 204")}
+          Instructor: ${esc(fac.name)} &bull; ${esc(primaryClass.subject)} (${esc(primaryClass.grade)} - ${esc(primaryClass.section)})${semSubtitle} &bull; ${esc(primaryClass.room || "Room 204")}
         </div>
       </div>
 
@@ -919,7 +1006,9 @@ function printFacultyReport(title) {
 }
 
 function downloadFacultyReportPDF(title) {
-  const filename = `${title.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`;
+  const sem = $("facReportSemFilter")?.value || "";
+  const semTag = sem ? `_${sem.replace(/\s+/g, "_")}` : "";
+  const filename = `${title.replace(/\s+/g, '_')}${semTag}_${new Date().toISOString().slice(0, 10)}.pdf`;
   executeAutomaticPDFDownload(filename, generateFacultyReportHTML(title));
 }
 
@@ -952,11 +1041,16 @@ function renderFacultyProfile() {
     const scheduledClassesHTML = fac.classes.length
       ? `<div>
           <small style="display:block;color:var(--text-muted);font-weight:700;margin-bottom:6px;">SCHEDULED CLASS SECTIONS (${fac.classes.length})</small>
-          ${fac.classes.map(c => `
-            <div class="modal-pill" style="padding: 8px 12px; margin-bottom: 6px; display: block;">
-              <i class="fa-solid fa-chalkboard-user" style="color:var(--primary)"></i> <b>${esc(c.subject)}</b> &bull; ${esc(c.grade)} (${esc(c.section)}) &bull; <small>${esc(c.schedule)}</small> &bull; <small><i class="fa-solid fa-location-dot"></i> <b>${esc(c.room || "Room 204")}</b></small>
-            </div>
-          `).join("")}
+          ${fac.classes.map(c => {
+            const semBadge = (c.semester && c.semester !== "N/A")
+              ? ` &bull; <span class="badge ${c.semester === "2nd Sem" ? "silver" : "enrolled"}" style="font-size:10px;padding:2px 6px;">${esc(c.semester)}</span>`
+              : "";
+            return `
+              <div class="modal-pill" style="padding: 8px 12px; margin-bottom: 6px; display: block;">
+                <i class="fa-solid fa-chalkboard-user" style="color:var(--primary)"></i> <b>${esc(c.subject)}</b> &bull; ${esc(c.grade)} (${esc(c.section)})${semBadge} &bull; <small>${esc(c.schedule)}</small> &bull; <small><i class="fa-solid fa-location-dot"></i> <b>${esc(c.room || "Room 204")}</b></small>
+              </div>
+            `;
+          }).join("")}
         </div>`
       : `<p style="color:var(--text-muted);font-size:13px;">No classes scheduled yet.</p>`;
 
@@ -990,3 +1084,15 @@ function saveFacultyProfileSettings() {
   renderFacultyProfile();
   toast("Profile information successfully updated.");
 }
+
+// Re-sync compact mobile dropdown labels if viewport crosses 640px
+let lastFacMobileMode = typeof window !== "undefined" && window.innerWidth <= 640;
+window.addEventListener("resize", () => {
+  const isNowMobile = window.innerWidth <= 640;
+  if (isNowMobile !== lastFacMobileMode) {
+    lastFacMobileMode = isNowMobile;
+    populateFacultyGradesFilters();
+    populateFacultyAttendanceFilters();
+    populateFacultyReportFilters();
+  }
+});

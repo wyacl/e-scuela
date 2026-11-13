@@ -1,6 +1,10 @@
 /* ==========================================================
-   LOGIN SCREEN: FULL-SCREEN (ANIMATION REMOVED)
+   LOGIN SCREEN: FULL-SCREEN (INSTANT LOAD, NO FADE-IN)
    ========================================================== */
+
+html.has-session .login {
+  display: none !important;
+}
 
 .login {
   height: 100vh;
@@ -13,9 +17,11 @@
   background-color: #ffffff;
   font-family: 'Montserrat', sans-serif;
   overflow: hidden;
+  animation: none !important;
+  transition: none !important;
 }
 
-/* Full-Screen Edge-to-Edge Container (Instant render, no fade) */
+/* Full-Screen Edge-to-Edge Container */
 .login-card-container {
   width: 100%;
   max-width: 100%;
@@ -27,7 +33,7 @@
   grid-template-columns: 45% 55%;
   box-shadow: none;
   overflow: hidden;
-  animation: none !important; /* Fade animation disabled */
+  animation: none !important;
 }
 
 /* --------------------------------------------------
@@ -346,7 +352,12 @@
     gap: 8px;
   }
 
+  .login-type button {
+    font-size: 11px;
+    padding: 0 4px;
+  }
+
   .login-right {
-    padding: 36px 24px 48px;
+    padding: 28px 20px 36px;
   }
 }

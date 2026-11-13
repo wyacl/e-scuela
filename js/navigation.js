@@ -112,6 +112,9 @@ const titles = {
 
 function showPage(page) {
   closeDrawer();
+  if (typeof saveSession === "function" && (currentUser || currentStudent)) {
+    saveSession(page);
+  }
   document.querySelectorAll(".page").forEach(x => x.classList.add("hidden"));
   const el = $(page);
   if (el) {

@@ -1,3 +1,34 @@
+function applyCircularFavicon(src = "la logo.webp") {
+  const img = new Image();
+  img.onload = () => {
+    const size = 64;
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, size, size);
+    ctx.drawImage(img, 2, 2, size - 4, size - 4);
+
+    let link = document.querySelector("link[rel*='icon']");
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.head.appendChild(link);
+    }
+    link.type = "image/png";
+    link.href = canvas.toDataURL("image/png");
+  };
+  img.src = src;
+}
+
 function renderAdminDashboardAnnouncements() {
   const listEl = $("adminAnnouncementsList");
   const countEl = $("adminNoticeCount");
@@ -30,8 +61,6 @@ function renderDashboard() {
 
   $("totalStudents").textContent = data.students.length;
   $("enrolledStudents").textContent = enrolledCount;
-  $("graduatingStudents").textContent = data.students.filter(s => s.grade === "Grade 12").length;
-  $("failedCount").textContent = Object.values(data.grades).flat().filter(g => statusOf(calc(g)) === "Failed").length;
   $("droppedCount").textContent = droppedIds.size;
 
   $("recentStudents").innerHTML = data.students.slice(0, 6).map(s =>
@@ -47,6 +76,11 @@ function populateSelects() {
     const old = el.value;
     el.innerHTML = data.students.map(s => `<option value="${esc(s.id)}">${esc(formatNameId(s))}</option>`).join("");
     if (old && data.students.some(s => s.id === old)) el.value = old;
+  }
+
+  const eGrade = $("eGrade");
+  if (eGrade) {
+    eGrade.innerHTML = gradeLevels.map(g => `<option value="${g}">${g}</option>`).join("");
   }
 
   const eDateInput = $("eDate");
@@ -96,13 +130,16 @@ function toast(msg) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  applyCircularFavicon();
+
   $("gradeStudent")?.addEventListener("change", renderGrades);
   $("studentSearch")?.addEventListener("input", renderStudents);
   $("studentGrade")?.addEventListener("change", renderStudents);
   $("eStudent")?.addEventListener("change", syncEnrollmentStudentData);
+  $("eGrade")?.addEventListener("change", updateEnrollmentFields);
   $("eStrand")?.addEventListener("change", updateEnrollmentFields);
 
-document.addEventListener("keydown", e => {
+  document.addEventListener("keydown", e => {
     if (e.key === "Escape") {
       closeDrawer();
       closeStudentModal();
@@ -135,4 +172,7 @@ document.addEventListener("keydown", e => {
   }
 
   renderAll();
+  if (typeof restoreSession === "function") {
+    restoreSession();
+  }
 });
